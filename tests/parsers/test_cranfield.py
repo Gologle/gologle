@@ -164,7 +164,7 @@ skin-friction and heat-transfer coefficients are tabulated for a wide range
 of shock strengths ."""
             }
         ),
-        # 5th test
+        # 5th test case
         (
             """74
 .T
@@ -201,7 +201,7 @@ coefficients were calculated .  effects on the velocity profile of
 surface roughness and flow length are examined ."""
             }
         ),
-        # 5th test case
+        # 6th test case
         ("""1369
 .T
 steady motion of a sphere., oseen's criticism and solution .
@@ -228,7 +228,7 @@ water, and thence the number of globules contained in a cloud of
 given mass .  consequently the conditions of its validity has been much
 discussed both from the experimental and from the theoretical side ."""
          }),
-        # 6th test case
+        # 7th test case
         (
             """471
 .T
@@ -258,9 +258,5 @@ def test_init_CranfieldEntry(text: str, expected: dict[str, int|str]):
 def test_init_CranfieldParser():
     cran = CranfieldParser()
 
-    next_id = 1
-    for entry in cran:
-        assert entry.id == next_id
-        next_id += 1
-
-    assert next_id == 1401
+    for entry, id_ in zip(cran, range(1, cran.total + 1)):
+        assert entry.id == id_

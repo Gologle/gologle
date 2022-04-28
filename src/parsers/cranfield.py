@@ -10,7 +10,7 @@ class CranfieldEntry:
 
     def __init__(self, raw_text: str):
         # this regex may be insane
-        # check it here https://regex101.com/r/Pg3Fd3/1
+        # check it here https://regex101.com/r/giiYJQ/1
         match = re.match(
             pattern=r"\A(?P<id>\d+)\n\.T\n(?P<title>[\w\W]*?).A\n(?P<author>[\w\W]*?)\.B\n(?P<B>[\w\W]*?)\.W(?P<text>[\w\W]*?)\Z",
             string=raw_text
