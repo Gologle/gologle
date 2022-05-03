@@ -1,3 +1,2 @@
 # gologle
-An Information Retrieval System of new type :v
-¯\_(ツ)_/¯
+A new kind of Information Retrieval System _(ツ)_/¯
