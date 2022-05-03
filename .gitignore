@@ -130,3 +130,10 @@ dmypy.json
 
 .vscode/
 .idea/
+
+# report stuff
+docs/report/*
+!docs/report/*.tex
+!docs/report/*.cls
+!docs/report/*.bib
+!docs/report/*.pdf
