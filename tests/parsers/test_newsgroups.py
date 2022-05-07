@@ -11,7 +11,7 @@ from src.parsers.newsgroups import NewsgroupsParser, NewsgroupsEntry
     [
         # 1rst test case
         (
-            Path("datasets/20news-18828/comp.sys.ibm.pc.hardware/60359"),
+            Path("datasets/20newsgroups-18828/comp.sys.ibm.pc.hardware/60359"),
             {
                 "id": 60359,
                 "group": "comp.sys.ibm.pc.hardware",
@@ -37,7 +37,7 @@ lynn@vax1.mankato.msus.edu
         ),
         # 2nd test case
         (
-            Path("datasets/20news-18828/rec.motorcycles/103121"),
+            Path("datasets/20newsgroups-18828/rec.motorcycles/103121"),
             {
                 "id": 103121,
                 "group": "rec.motorcycles",
@@ -66,7 +66,7 @@ Watch yourself.
         ),
         # 3rd test case
         (
-            Path("datasets/20news-18828/soc.religion.christian/20551"),
+            Path("datasets/20newsgroups-18828/soc.religion.christian/20551"),
             {
                 "id": 20551,
                 "group": "soc.religion.christian",
@@ -94,7 +94,7 @@ Rushing in where angels fear to tread."""
         ),
         # 4th test case
         (
-            Path("datasets/20news-18828/talk.politics.misc/176905"),
+            Path("datasets/20newsgroups-18828/talk.politics.misc/176905"),
             {
                 "id": 176905,
                 "group": "talk.politics.misc",
@@ -157,7 +157,7 @@ I think murder is against federal, but not some state laws.
         ),
         # 5th test case
         (
-            Path("datasets/20news-18828/misc.forsale/74720"),
+            Path("datasets/20newsgroups-18828/misc.forsale/74720"),
             {
                 "id": 74720,
                 "group": "misc.forsale",

@@ -1,12 +1,13 @@
 from typing import Iterator
 from pathlib import Path
 
-from . import DATASETS_ROOT
+from . import DatasetEntry, DatasetParser
 
 
-class NewsgroupsEntry:
+class NewsgroupsEntry(DatasetEntry):
 
     def __init__(self, entry_path: Path):
+        self._path = entry_path
         try:
             text = entry_path.read_text(errors="ignore")
         except UnicodeDecodeError as e:
@@ -33,16 +34,20 @@ class NewsgroupsEntry:
 
         self.text = text[end_of_line2:].strip()
 
+    @property
+    def raw_text(self):
+        return self._path.read_text(errors="ignore")
 
-class NewsgroupsParser:
+
+class NewsgroupsParser(DatasetParser):
     """Parser for the 20 Newsgroups dataset"""
 
-    entries: list[NewsgroupsEntry] = []
-    data: Path = DATASETS_ROOT / "20news-18828"
-    total: int = 18828
-
-    def __init__(self):
-        super().__init__()
+    def __init__(self, root: Path = None):
+        if root is not None:
+            self.root = root
+        self.data: Path = self.root / "20newsgroups-18828"
+        self.total: int = 18828
+        self.entries: list[NewsgroupsEntry] = []
 
         for folder in self.data.iterdir():
             for file in folder.iterdir():
