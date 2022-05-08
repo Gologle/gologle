@@ -41,35 +41,6 @@ class VectorialModel(Engine):
         if update_db:
             self.update_index()
 
-    def answer(self, query: str) -> QueryResults:
-        query_terms = get_terms(query)
-        query_ntf = VectorialModel._ntf(query_terms)
-        query_idf: dict[str, float] = {}
-        with Session(self.engine) as session:
-            for term in query_terms:
-                statement = select(InverseDocumentFrequency).where(
-                    InverseDocumentFrequency.term == term
-                )
-                idf = session.exec(statement).first().value
-                query_idf[term] = idf
-
-        query_weights = {
-            term: (self.softened + (1 - self.softened) * query_ntf[term]) * query_idf[term]
-            for term in query_terms
-        }
-
-        results = QueryResults(ranking=True)
-        with Session(self.engine) as session:
-            for doc in session.exec(select(Document)):
-                sim = self._sim(query_weights, doc)
-                results.add_result(DocResult(
-                    id=doc.id,
-                    sim=sim,
-                    description=""
-                ))
-
-        return results
-
     def update_index(self) -> None:
         """Builds the index of the engine in a sqlite database."""
         SQLModel.metadata.create_all(self.engine)
@@ -105,7 +76,7 @@ class VectorialModel(Engine):
             # store the idf for every term
             for term, count in idf_count.items():
                 session.add(InverseDocumentFrequency(
-                    term=term,
+                    term_id=term,
                     value=log(self.dataset.total / count)
                 ))
 
@@ -132,6 +103,35 @@ class VectorialModel(Engine):
 
         return {term: count / max_term for term, count in term_count.items()}
 
+    def answer(self, query: str) -> QueryResults:
+        query_terms = get_terms(query)
+        query_ntf = VectorialModel._ntf(query_terms)
+        query_idf: dict[str, float] = {}
+        with Session(self.engine) as session:
+            for term in query_terms:
+                statement = select(InverseDocumentFrequency).where(
+                    InverseDocumentFrequency.term_id == term
+                )
+                idf = session.exec(statement).first().value
+                query_idf[term] = idf
+
+        query_weights = {
+            term: (self.softened + (1 - self.softened) * query_ntf[term]) * query_idf[term]
+            for term in query_terms
+        }
+
+        results = QueryResults(ranking=True)
+        with Session(self.engine) as session:
+            for doc in session.exec(select(Document)):
+                sim = self._sim(query_weights, doc)
+                results.add_result(DocResult(
+                    id=doc.id,
+                    sim=sim,
+                    description=""
+                ))
+
+        return results
+
     def _sim(self, query_weights: dict[str, float], doc: Document) -> float:
         """Calculates the similarity between a query and a document.
 
@@ -146,14 +146,18 @@ class VectorialModel(Engine):
         with Session(self.engine) as session:
             for query_term in query_weights:
                 select_ntf = select(NormTermFrequency).where(
-                    Term.id == query_term and Document.id == doc.id
+                    NormTermFrequency.term_id == query_term,
+                    NormTermFrequency.document_id == doc.id
                 )
                 select_idf = select(InverseDocumentFrequency).where(
-                    Term.id == query_term
+                    InverseDocumentFrequency.term_id == query_term
                 )
                 ntf = session.exec(select_ntf).first()
                 idf = session.exec(select_idf).first()
-                doc_weights[query_term] = ntf.value * idf.value
+                if ntf is None:
+                    doc_weights[query_term] = 0
+                else:
+                    doc_weights[query_term] = ntf.value * idf.value
 
         prod_vectors = sum(doc_weights[term] * query_weights[term] for term in query_weights)
         prod_norm_vectors = (

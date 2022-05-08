@@ -26,6 +26,12 @@ class TestVectorialModel:
         assert len(docs) == model.dataset.total
         assert len(terms) == len(idfs)
 
+    def test_answer(self):
+        # TODO: Design some test for this method
+        # model = VectorialModel(CranfieldParser())
+        # answer = model.answer("shock wave").rank
+        pass
+
     @pytest.mark.parametrize(
         "terms, expected", [
             (
