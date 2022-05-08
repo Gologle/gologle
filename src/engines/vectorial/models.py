@@ -1,6 +1,6 @@
-from pydantic import condecimal
 from sqlmodel import SQLModel, Field
 
+# This import is needed for init the database
 from src.engines.models import Term, Document
 
 
