@@ -1,13 +1,12 @@
 from typing import Iterator
 from pathlib import Path
 
-from . import DatasetEntry, DatasetParser
+from .base import DatasetEntry, DatasetParser
 
 
 class NewsgroupsEntry(DatasetEntry):
 
     def __init__(self, entry_path: Path):
-        self._path = entry_path
         try:
             text = entry_path.read_text(errors="ignore")
         except UnicodeDecodeError as e:
@@ -18,7 +17,9 @@ class NewsgroupsEntry(DatasetEntry):
         line1 = text[:end_of_line1]
         line2 = text[end_of_line1 + 1: end_of_line2]
 
-        self.id = int(entry_path.name)
+        super(NewsgroupsEntry, self).__init__(entry_path.name)
+
+        self._path = entry_path
         self.group = entry_path.parent.name
 
         if line1.startswith("From: "):
@@ -42,11 +43,12 @@ class NewsgroupsEntry(DatasetEntry):
 class NewsgroupsParser(DatasetParser):
     """Parser for the 20 Newsgroups dataset"""
 
-    def __init__(self, root: Path = None):
-        if root is not None:
-            self.root = root
-        self.data: Path = self.root / "20newsgroups-18828"
-        self.total: int = 18828
+    def __init__(self):
+        super(NewsgroupsParser, self).__init__(
+            data=self.root / "20newsgroups-18828",
+            total=18828
+        )
+
         self.entries: list[NewsgroupsEntry] = []
 
         for folder in self.data.iterdir():

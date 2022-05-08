@@ -13,7 +13,7 @@ from src.parsers.newsgroups import NewsgroupsParser, NewsgroupsEntry
         (
             Path("datasets/20newsgroups-18828/comp.sys.ibm.pc.hardware/60359"),
             {
-                "id": 60359,
+                "id": "60359",
                 "group": "comp.sys.ibm.pc.hardware",
                 "from_": "lynn@vax1.mankato.msus.edu",
                 "subject": "IDE & MFM in same machine?  HOW?",
@@ -39,7 +39,7 @@ lynn@vax1.mankato.msus.edu
         (
             Path("datasets/20newsgroups-18828/rec.motorcycles/103121"),
             {
-                "id": 103121,
+                "id": "103121",
                 "group": "rec.motorcycles",
                 "from_": "MJMUISE@1302.watstar.uwaterloo.ca (Mike Muise)",
                 "subject": "Re: Drinking and Riding",
@@ -68,7 +68,7 @@ Watch yourself.
         (
             Path("datasets/20newsgroups-18828/soc.religion.christian/20551"),
             {
-                "id": 20551,
+                "id": "20551",
                 "group": "soc.religion.christian",
                 "from_": "atterlep@vela.acs.oakland.edu (Cardinal Ximenez)",
                 "subject": "Re: A question that has bee bothering me.",
@@ -96,7 +96,7 @@ Rushing in where angels fear to tread."""
         (
             Path("datasets/20newsgroups-18828/talk.politics.misc/176905"),
             {
-                "id": 176905,
+                "id": "176905",
                 "group": "talk.politics.misc",
                 "from_": "tak@leland.Stanford.EDU (David William Budd)",
                 "subject": "Re: Rodney King Trial, Civil Rights Violations, Double Jeopardy",
@@ -159,7 +159,7 @@ I think murder is against federal, but not some state laws.
         (
             Path("datasets/20newsgroups-18828/misc.forsale/74720"),
             {
-                "id": 74720,
+                "id": "74720",
                 "group": "misc.forsale",
                 "from_": "gt1706a@prism.gatech.EDU (Maureen L. Eagle)",
                 "subject": "WANTED Brother P-Touch",
@@ -193,10 +193,12 @@ def test_init_NewsgroupsParser():
     newsgroups = NewsgroupsParser()
 
     groups = {}
-    for entry, group in groupby(newsgroups, key=lambda x: x.group):
-        try:
-            groups[group].append(entry)
-        except KeyError:
-            groups[group] = [entry]
+    entries = set()
+    for key, group in groupby(newsgroups, key=lambda x: x.group):
+        for entry in group:
+            if entry in entries:
+                assert False, f"Same id({entry.id}) for two documents"
+            entries.add(entry)
+        groups[key] = group
 
     assert len(groups) == 20

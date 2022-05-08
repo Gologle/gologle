@@ -137,3 +137,5 @@ docs/report/*
 !docs/report/*.cls
 !docs/report/*.bib
 !docs/report/*.pdf
+
+*.db

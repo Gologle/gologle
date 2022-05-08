@@ -26,7 +26,7 @@ experimental results are interpreted in the light of present overall
 information on transition at supersonic speeds and conclusions as
 to further fruitful experiments are drawn .""",
         {
-            "id": 41,
+            "id": "41",
             "title": "on transition experiments at moderate supersonic speeds .",
             "author": "morkovin,m.v.",
             "B": "j. ae. scs. 24, 1957, 480.",
@@ -66,7 +66,7 @@ accurate method of locating the separation point in a compressible flow
 with heat transfer is developed .  numerical examples to illustrate the
 results in detail are given throughout .""",
          {
-             "id": 55,
+             "id": "55",
              "title": """separation, stability and other properties of compressible
 laminar boundary layer with pressure gradient and heat
 transfer .""",
@@ -109,7 +109,7 @@ generation of an acoustically intense sound
 wave .  applications to turbulence
 and to noise in supersonic wind tunnels are indicated .""",
          {
-             "id": 65,
+             "id": "65",
              "title": """convection of a pattern of vorticity through a shock
 wave .""",
              "author": "ribner,h.s.",
@@ -147,7 +147,7 @@ shocks .
 skin-friction and heat-transfer coefficients are tabulated for a wide range
 of shock strengths .""",
             {
-                "id": 71,
+                "id": "71",
                 "title": """laminar boundary layer behind shock advancing into
 stationary fluid .""",
                 "author": "mirels,h.",
@@ -185,7 +185,7 @@ to a cold wall .  velocity profiles and average skin-friction
 coefficients were calculated .  effects on the velocity profile of
 surface roughness and flow length are examined .""",
             {
-                "id": 74,
+                "id": "74",
                 "title": """an experimental study of the turbulen coundary layer
 on a shock tube wall .""",
                 "author": "gooderum,p.n.",
@@ -216,7 +216,7 @@ water, and thence the number of globules contained in a cloud of
 given mass .  consequently the conditions of its validity has been much
 discussed both from the experimental and from the theoretical side .""",
          {
-             "id": 1369,
+             "id": "1369",
              "title": "steady motion of a sphere., oseen's criticism and solution .",
              "author": "",
              "B": "",
@@ -236,7 +236,7 @@ discussed both from the experimental and from the theoretical side ."""
 .B
 .W""",
             {
-                "id": 471,
+                "id": "471",
                 "title": "",
                 "author": "",
                 "B": "",
@@ -259,4 +259,4 @@ def test_init_CranfieldParser():
     cran = CranfieldParser()
 
     for entry, id_ in zip(cran, range(1, cran.total + 1)):
-        assert entry.id == id_
+        assert entry.id == str(id_)

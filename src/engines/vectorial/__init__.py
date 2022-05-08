@@ -1,0 +1,1 @@
+from .vectorial import VectorialModel
