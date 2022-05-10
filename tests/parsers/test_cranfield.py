@@ -29,7 +29,7 @@ to further fruitful experiments are drawn .""",
             "id": "41",
             "title": "on transition experiments at moderate supersonic speeds .",
             "author": "morkovin,m.v.",
-            "B": "j. ae. scs. 24, 1957, 480.",
+            "bib": "j. ae. scs. 24, 1957, 480.",
             "text": """on transition experiments at moderate supersonic speeds .
   studies of transition over a flat plate at mach number 1.76
 were carried out using a hot-wire anemometer as one of the
@@ -71,7 +71,7 @@ results in detail are given throughout .""",
 laminar boundary layer with pressure gradient and heat
 transfer .""",
              "author": "morduchow,m. and grape,r.g.",
-             "B": "naca tn.3296, 1955.",
+             "bib": "naca tn.3296, 1955.",
              "text": """separation, stability and other properties of compressible
 laminar boundary layer with pressure gradient and heat
 transfer .
@@ -113,7 +113,7 @@ and to noise in supersonic wind tunnels are indicated .""",
              "title": """convection of a pattern of vorticity through a shock
 wave .""",
              "author": "ribner,h.s.",
-             "B": "naca tn.2864, 1953.",
+             "bib": "naca tn.2864, 1953.",
              "text": """convection of a pattern of vorticity through a shock
 wave .
   an arbitrary weak spatial distribution of vorticity can be
@@ -151,7 +151,7 @@ of shock strengths .""",
                 "title": """laminar boundary layer behind shock advancing into
 stationary fluid .""",
                 "author": "mirels,h.",
-                "B": "naca tn.3401, 1955.",
+                "bib": "naca tn.3401, 1955.",
                 "text": """laminar boundary layer behind shock advancing into
 stationary fluid .
   a study was made of the laminar compressible boundary layer induced
@@ -189,7 +189,7 @@ surface roughness and flow length are examined .""",
                 "title": """an experimental study of the turbulen coundary layer
 on a shock tube wall .""",
                 "author": "gooderum,p.n.",
-                "B": "naca tn.4243, 1958.",
+                "bib": "naca tn.4243, 1958.",
                 "text": """an experimental study of the turbulen coundary layer
 on a shock tube wall .
   interferometric measurements were made of the density profiles of
@@ -219,7 +219,7 @@ discussed both from the experimental and from the theoretical side .""",
              "id": "1369",
              "title": "steady motion of a sphere., oseen's criticism and solution .",
              "author": "",
-             "B": "",
+             "bib": "",
              "text": """steady motion of a sphere., oseens's criticism and solution .
 the formula of stokes for the resistance experienced slowly
 moving sphere has been employed in physical researches of fundamental
@@ -239,7 +239,7 @@ discussed both from the experimental and from the theoretical side ."""
                 "id": "471",
                 "title": "",
                 "author": "",
-                "B": "",
+                "bib": "",
                 "text": ""
             }
         )
@@ -251,7 +251,7 @@ def test_init_CranfieldEntry(text: str, expected: dict[str, int|str]):
     assert entry.id == expected["id"]
     assert entry.title == expected["title"]
     assert entry.author == expected["author"]
-    assert entry.B == expected["B"]
+    assert entry.bib == expected["bib"]
     assert entry.text == expected["text"]
 
 

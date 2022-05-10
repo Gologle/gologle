@@ -12,7 +12,7 @@ class CranfieldEntry(DatasetEntry):
         # this regex may be insane
         # check it here https://regex101.com/r/giiYJQ/1
         match = re.match(
-            pattern=r"\A(?P<id>\d+)\n\.T\n(?P<title>[\w\W]*?).A\n(?P<author>[\w\W]*?)\.B\n(?P<B>[\w\W]*?)\.W(?P<text>[\w\W]*?)\Z",
+            pattern=r"\A(?P<id>\d+)\n\.T\n(?P<title>[\w\W]*?).A\n(?P<author>[\w\W]*?)\.B\n(?P<bib>[\w\W]*?)\.W(?P<text>[\w\W]*?)\Z",
             string=raw_text
         )
 
@@ -21,7 +21,7 @@ class CranfieldEntry(DatasetEntry):
         self._raw_text = raw_text
         self.title = match["title"].strip()
         self.author = match["author"].strip()
-        self.B = match["B"].strip()             # TODO: what is the right name for this attribute?
+        self.bib = match["bib"].strip()
         self.text = match["text"].strip()
 
     @property
@@ -32,7 +32,7 @@ class CranfieldEntry(DatasetEntry):
 class CranfieldParser(DatasetParser):
     """Parser for the Cranfield dataset"""
 
-    def __init__(self, root: Path = None):
+    def __init__(self):
         super(CranfieldParser, self).__init__(
             data=self.root / "cranfield-1400" / "cran.all.1400",
             total=1400
