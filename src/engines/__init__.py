@@ -12,7 +12,7 @@ class Engine(ABC):
         self.dataset = dataset
 
     @abstractmethod
-    def answer(self, query: str) -> QueryResults:
+    def answer(self, query: str, max_length: int) -> QueryResults:
         """Answers a query to the user."""
 
     @abstractmethod

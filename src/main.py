@@ -1,6 +1,4 @@
-from ast import In
 from enum import Enum
-from xml.etree.ElementInclude import include
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +7,7 @@ from sqlmodel import Session
 from src.parsers import CranfieldParser
 from src.engines.vectorial.vectorial import VectorialModel
 from src.engines.models import Document
+from src.utils.timeit import timed
 
 
 app = FastAPI()
@@ -30,26 +29,31 @@ def paginated(limit: int, offset: int, results: list, total: int):
         "results": results,
         "limit": limit,
         "offset": offset,
+        "total": total,
         "hasMore": offset + limit < total,
     }
 
 
+def fetch_documents(q: str, dataset: Dataset, limit: int, offset: int):
+    if dataset == Dataset.cranfield:
+        model = VectorialModel(CranfieldParser())
+
+    results = model.answer(q, max_length=200)
+    rank = { doc.id: doc.sim for doc in results.rank }
+    ids = [result.id for result in results.docs]
+
+    with Session(model.engine) as session:
+        docs = session.query(Document).filter(Document.id.in_(ids)).all()
+        docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
+
+    return docs
+
 @app.get("/query")
 async def query(q: str, dataset: Dataset = Dataset.cranfield, limit: int = 10, offset: int = 0):
     try:
-        if dataset == Dataset.cranfield:
-            model = VectorialModel(CranfieldParser())
-
-        results = model.answer(q)
-        rank = { doc.id: doc.sim for doc in results.rank }
-        ids = [result.id for result in results.docs]
-
-        with Session(model.engine) as session:
-            docs = session.query(Document).filter(Document.id.in_(ids)).all()
-            docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
-
-            return { "query": q } | paginated(limit, offset, docs[offset:offset + limit], len(docs))
+        (docs, time) = timed(fetch_documents, q, dataset, limit, offset)
+        return { "query": q, "time": time } | paginated(limit, offset, docs[offset:offset + limit], len(docs))
             
     except Exception as e: # TODO: Remove this shitty exception handler by fixing empty results bug
         print(e)
-        return { "query": q } | paginated(limit, offset, [], 0)
+        return { "query": q, "time": 0 } | paginated(limit, offset, [], 0)
