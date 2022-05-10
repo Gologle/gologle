@@ -41,13 +41,12 @@ async def query(q: str, dataset: Dataset = Dataset.cranfield, limit: int = 10, o
             model = VectorialModel(CranfieldParser())
 
         results = model.answer(q)
-        sim = { doc.id: doc.sim for doc in results.docs }
+        rank = { doc.id: doc.sim for doc in results.rank }
         ids = [result.id for result in results.docs]
-        print(sim)
 
         with Session(model.engine) as session:
             docs = session.query(Document).filter(Document.id.in_(ids)).all()
-            docs = sorted(docs, key=lambda doc: sim[doc.id], reverse=True)
+            docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
 
             return { "query": q } | paginated(limit, offset, docs[offset:offset + limit], len(docs))
             
