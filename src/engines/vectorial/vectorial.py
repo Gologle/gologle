@@ -103,7 +103,7 @@ class VectorialModel(Engine):
 
         return {term: count / max_term for term, count in term_count.items()}
 
-    def answer(self, query: str) -> QueryResults:
+    def answer(self, query: str, max_length: int) -> QueryResults:
         query_terms = get_terms(query)
         query_ntf = VectorialModel._ntf(query_terms)
         query_idf: dict[str, float] = {}
@@ -120,7 +120,7 @@ class VectorialModel(Engine):
             for term in query_terms
         }
 
-        results = QueryResults(ranking=True)
+        results = QueryResults(ranking=True, max_length=max_length)
         with Session(self.engine) as session:
             for doc in session.exec(select(Document)):
                 sim = self._sim(query_weights, doc)

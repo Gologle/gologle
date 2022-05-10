@@ -29,6 +29,7 @@ def paginated(limit: int, offset: int, results: list, total: int):
         "results": results,
         "limit": limit,
         "offset": offset,
+        "total": total,
         "hasMore": offset + limit < total,
     }
 
