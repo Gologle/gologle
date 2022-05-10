@@ -34,11 +34,11 @@ def paginated(limit: int, offset: int, results: list, total: int):
     }
 
 
-def fetch_documents(q: str, dataset: Dataset.cranfield):
+def fetch_documents(q: str, dataset: Dataset, limit: int, offset: int):
     if dataset == Dataset.cranfield:
         model = VectorialModel(CranfieldParser())
 
-    results = model.answer(q)
+    results = model.answer(q, max_length=200)
     rank = { doc.id: doc.sim for doc in results.rank }
     ids = [result.id for result in results.docs]
 
@@ -51,7 +51,7 @@ def fetch_documents(q: str, dataset: Dataset.cranfield):
 @app.get("/query")
 async def query(q: str, dataset: Dataset = Dataset.cranfield, limit: int = 10, offset: int = 0):
     try:
-        (docs, time) = timed(fetch_documents, q, dataset)
+        (docs, time) = timed(fetch_documents, q, dataset, limit, offset)
         return { "query": q, "time": time } | paginated(limit, offset, docs[offset:offset + limit], len(docs))
             
     except Exception as e: # TODO: Remove this shitty exception handler by fixing empty results bug
