@@ -18,7 +18,7 @@ class TestVectorialModel:
 
         model = VectorialModel(CranfieldParser())
 
-        with Session(model.engine) as session:
+        with Session(model.db_engine) as session:
             docs = session.exec(select(Document)).all()
             terms = session.exec(select(Term)).all()
             idfs = session.exec(select(InverseDocumentFrequency)).all()

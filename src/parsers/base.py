@@ -26,6 +26,10 @@ class DatasetParser(ABC):
         self.data = data
         self.total = total
 
+    @property
+    def name(self) -> str:
+        return self.data.name
+
     @abstractmethod
     def __iter__(self) -> Iterator[DatasetEntry]:
         """Iteration over datasets must return instances of entries parsed"""

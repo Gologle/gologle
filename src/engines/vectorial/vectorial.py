@@ -34,20 +34,20 @@ class VectorialModel(Engine):
         super(VectorialModel, self).__init__("Vectorial Model", dataset)
 
         self.softened = softened
-        self.db = Path(f"{self.dataset.data.name}({self.name}).db")
+        self.db = Path(f"{self.dataset.name}({self.name}).db")
         update_db = not self.db.is_file()
-        self.engine = create_engine("sqlite:///" + self.db.name)
+        self.db_engine = create_engine("sqlite:///" + self.db.name)
 
         if update_db:
             self.update_index()
 
-    def update_index(self) -> None:
+    def _update_index(self) -> None:
         """Builds the index of the engine in a sqlite database."""
-        SQLModel.metadata.create_all(self.engine)
+        SQLModel.metadata.create_all(self.db_engine)
 
         idf_count: dict[str, int] = defaultdict(lambda: 0)
 
-        with Session(self.engine) as session:
+        with Session(self.db_engine) as session:
             seen_terms = set()
             for entry in self.dataset:
                 # cache this property in case that is reading from disk
@@ -107,7 +107,7 @@ class VectorialModel(Engine):
         query_terms = get_terms(query)
         query_ntf = VectorialModel._ntf(query_terms)
         query_idf: dict[str, float] = {}
-        with Session(self.engine) as session:
+        with Session(self.db_engine) as session:
             for term in query_terms:
                 statement = select(InverseDocumentFrequency).where(
                     InverseDocumentFrequency.term_id == term
@@ -121,7 +121,7 @@ class VectorialModel(Engine):
         }
 
         results = QueryResults(ranking=True, max_length=max_length)
-        with Session(self.engine) as session:
+        with Session(self.db_engine) as session:
             for doc in session.exec(select(Document)):
                 sim = self._sim(query_weights, doc)
                 results.add_result(DocResult(
@@ -143,7 +143,7 @@ class VectorialModel(Engine):
             A value indicating the similarity between the query and the document.
         """
         doc_weights: dict[str, float] = {}
-        with Session(self.engine) as session:
+        with Session(self.db_engine) as session:
             for query_term in query_weights:
                 select_ntf = select(NormTermFrequency).where(
                     NormTermFrequency.term_id == query_term,
