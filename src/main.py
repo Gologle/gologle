@@ -10,6 +10,13 @@ from src.engines.models import Document
 from src.utils.timeit import timed
 
 
+# Caching for sqlachemy, improves performance, check the reference
+# https://github.com/tiangolo/sqlmodel/issues/189#issuecomment-1025190094
+from sqlmodel.sql.expression import Select, SelectOfScalar
+SelectOfScalar.inherit_cache = True
+Select.inherit_cache = True
+
+
 class Dataset(Enum):
     cranfield = "cranfield"
     newsgroups = "newsgroups"
