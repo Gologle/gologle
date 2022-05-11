@@ -1,6 +1,6 @@
 from enum import Enum
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 
@@ -68,17 +68,6 @@ def fetch_documents(q: str, model: Model, dataset: Dataset, limit: int, offset: 
     return docs
 
 
-@app.get("/{doc_id}")
-async def details(doc_id: str, model: Model = Model.vectorial, dataset: Dataset = Dataset.cranfield):
-    engine = ENGINES[model][dataset]
-
-    with Session(engine.db_engine) as session:
-        doc = session.exec(
-            select(Document).where(Document.id == doc_id)
-        ).first()
-        return doc
-
-
 @app.get("/query")
 async def query(
     q: str,
@@ -89,3 +78,18 @@ async def query(
 ):
     (docs, time) = timed(fetch_documents, q, model, dataset, limit, offset)
     return {"query": q, "time": time} | paginated(limit, offset, docs[offset:offset + limit], len(docs))
+
+
+@app.get("/{doc_id}")
+async def details(doc_id: str, model: Model = Model.vectorial, dataset: Dataset = Dataset.cranfield):
+    engine = ENGINES[model][dataset]
+
+    with Session(engine.db_engine) as session:
+        doc = session.exec(
+            select(Document).where(Document.id == doc_id)
+        ).first()
+
+    if doc is None:
+        return HTTPException(status_code=404, detail="Document not found")
+
+    return doc
