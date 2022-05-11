@@ -2,7 +2,7 @@ from enum import Enum
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.parsers import CranfieldParser, NewsgroupsParser
 from src.engines.vectorial.vectorial import VectorialModel
@@ -59,6 +59,17 @@ def fetch_documents(q: str, model: Model, dataset: Dataset, limit: int, offset: 
         docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
 
     return docs
+
+
+@app.get("/{doc_id}")
+async def details(doc_id: str, model: Model = Model.vectorial, dataset: Dataset = Dataset.cranfield):
+    engine = ENGINES[model][dataset]
+
+    with Session(engine.db_engine) as session:
+        doc = session.exec(
+            select(Document).where(Document.id == doc_id)
+        ).first()
+        return doc
 
 
 @app.get("/query")
