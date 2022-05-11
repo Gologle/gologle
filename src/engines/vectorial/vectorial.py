@@ -112,8 +112,8 @@ class VectorialModel(Engine):
                 statement = select(InverseDocumentFrequency).where(
                     InverseDocumentFrequency.term_id == term
                 )
-                idf = session.exec(statement).first().value
-                query_idf[term] = idf
+                db_term = session.exec(statement).first()
+                query_idf[term] = 0 if db_term is None else db_term.value
 
         query_weights = {
             term: (self.softened + (1 - self.softened) * query_ntf[term]) * query_idf[term]
@@ -124,11 +124,12 @@ class VectorialModel(Engine):
         with Session(self.db_engine) as session:
             for doc in session.exec(select(Document)):
                 sim = self._sim(query_weights, doc)
-                results.add_result(DocResult(
-                    id=doc.id,
-                    sim=sim,
-                    description=""
-                ))
+                if sim != 0:
+                    results.add_result(DocResult(
+                        id=doc.id,
+                        sim=sim,
+                        description=""
+                    ))
 
         return results
 
@@ -165,4 +166,9 @@ class VectorialModel(Engine):
             sqrt(sum(weight ** 2 for weight in query_weights.values()))
         )
 
-        return prod_vectors / prod_norm_vectors
+        try:
+            sim = prod_vectors / prod_norm_vectors
+        except ZeroDivisionError:
+            sim = 0
+
+        return sim

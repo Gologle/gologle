@@ -80,10 +80,5 @@ async def query(
     limit: int = 10,
     offset: int = 0
 ):
-    try:
-        (docs, time) = timed(fetch_documents, q, model, dataset, limit, offset)
-        return {"query": q, "time": time} | paginated(limit, offset, docs[offset:offset + limit], len(docs))
-            
-    except Exception as e:  # TODO: Remove this shitty exception handler by fixing empty results bug
-        print(e)
-        return {"query": q, "time": 0} | paginated(limit, offset, [], 0)
+    (docs, time) = timed(fetch_documents, q, model, dataset, limit, offset)
+    return {"query": q, "time": time} | paginated(limit, offset, docs[offset:offset + limit], len(docs))
