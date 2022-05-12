@@ -90,6 +90,6 @@ async def details(doc_id: str, model: Model = Model.vectorial, dataset: Dataset 
         ).first()
 
     if doc is None:
-        return HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     return doc
