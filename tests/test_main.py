@@ -37,7 +37,7 @@ def test_query_with_data(q: str, eval_len: Callable):
     ]
 )
 def test_details(doc_id: str, status: int):
-    resp = client.get(f"/{doc_id}")
+    resp = client.get(f"/document/cranfield/{doc_id}")
     assert resp.status_code == status
     if status == 200:
         assert resp.json()["id"] == doc_id

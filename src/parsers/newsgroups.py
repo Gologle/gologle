@@ -6,7 +6,7 @@ from .base import DatasetEntry, DatasetParser
 
 class NewsgroupsEntry(DatasetEntry):
 
-    def __init__(self, entry_path: Path):
+    def __init__(self, group_id: int, entry_path: Path):
         try:
             text = entry_path.read_text(errors="ignore")
         except UnicodeDecodeError as e:
@@ -17,7 +17,7 @@ class NewsgroupsEntry(DatasetEntry):
         line1 = text[:end_of_line1]
         line2 = text[end_of_line1 + 1: end_of_line2]
 
-        super(NewsgroupsEntry, self).__init__(entry_path.name)
+        super(NewsgroupsEntry, self).__init__(f"{group_id}_{entry_path.name}")
 
         self._path = entry_path
         self.group = entry_path.parent.name
@@ -51,9 +51,9 @@ class NewsgroupsParser(DatasetParser):
 
         self.entries: list[NewsgroupsEntry] = []
 
-        for folder in self.data.iterdir():
+        for group_id, folder in enumerate(self.data.iterdir()):
             for file in folder.iterdir():
-                self.entries.append(NewsgroupsEntry(file))
+                self.entries.append(NewsgroupsEntry(group_id, file))
 
         assert len(self.entries) == self.total
 
