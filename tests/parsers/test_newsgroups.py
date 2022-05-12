@@ -7,13 +7,13 @@ from src.parsers.newsgroups import NewsgroupsParser, NewsgroupsEntry
 
 
 @pytest.mark.parametrize(
-    "path, expected",
+    "group_id, path, expected",
     [
         # 1rst test case
         (
-            Path("datasets/20newsgroups-18828/comp.sys.ibm.pc.hardware/60359"),
+            3, Path("datasets/20newsgroups-18828/comp.sys.ibm.pc.hardware/60359"),
             {
-                "id": "60359",
+                "id": "3_60359",
                 "group": "comp.sys.ibm.pc.hardware",
                 "from_": "lynn@vax1.mankato.msus.edu",
                 "subject": "IDE & MFM in same machine?  HOW?",
@@ -37,9 +37,9 @@ lynn@vax1.mankato.msus.edu
         ),
         # 2nd test case
         (
-            Path("datasets/20newsgroups-18828/rec.motorcycles/103121"),
+            8, Path("datasets/20newsgroups-18828/rec.motorcycles/103121"),
             {
-                "id": "103121",
+                "id": "8_103121",
                 "group": "rec.motorcycles",
                 "from_": "MJMUISE@1302.watstar.uwaterloo.ca (Mike Muise)",
                 "subject": "Re: Drinking and Riding",
@@ -66,9 +66,9 @@ Watch yourself.
         ),
         # 3rd test case
         (
-            Path("datasets/20newsgroups-18828/soc.religion.christian/20551"),
+            15, Path("datasets/20newsgroups-18828/soc.religion.christian/20551"),
             {
-                "id": "20551",
+                "id": "15_20551",
                 "group": "soc.religion.christian",
                 "from_": "atterlep@vela.acs.oakland.edu (Cardinal Ximenez)",
                 "subject": "Re: A question that has bee bothering me.",
@@ -94,9 +94,9 @@ Rushing in where angels fear to tread."""
         ),
         # 4th test case
         (
-            Path("datasets/20newsgroups-18828/talk.politics.misc/176905"),
+            18, Path("datasets/20newsgroups-18828/talk.politics.misc/176905"),
             {
-                "id": "176905",
+                "id": "18_176905",
                 "group": "talk.politics.misc",
                 "from_": "tak@leland.Stanford.EDU (David William Budd)",
                 "subject": "Re: Rodney King Trial, Civil Rights Violations, Double Jeopardy",
@@ -157,9 +157,9 @@ I think murder is against federal, but not some state laws.
         ),
         # 5th test case
         (
-            Path("datasets/20newsgroups-18828/misc.forsale/74720"),
+            6, Path("datasets/20newsgroups-18828/misc.forsale/74720"),
             {
-                "id": "74720",
+                "id": "6_74720",
                 "group": "misc.forsale",
                 "from_": "gt1706a@prism.gatech.EDU (Maureen L. Eagle)",
                 "subject": "WANTED Brother P-Touch",
@@ -179,8 +179,8 @@ Internet: gt1706a@prism.gatech.edu"""
         )
     ]
 )
-def test_init_NewsgroupsEntry(path, expected):
-    entry = NewsgroupsEntry(path)
+def test_init_NewsgroupsEntry(group_id, path, expected):
+    entry = NewsgroupsEntry(group_id, path)
 
     assert entry.id == expected["id"]
     assert entry.group == expected["group"]
