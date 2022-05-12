@@ -196,9 +196,8 @@ def test_init_NewsgroupsParser():
     entries = set()
     for key, group in groupby(newsgroups, key=lambda x: x.group):
         for entry in group:
-            if entry in entries:
-                assert False, f"Same id({entry.id}) for two documents"
-            entries.add(entry)
+            assert entry.id not in entries, f"Same id({entry.id}) for two documents"
+            entries.add(entry.id)
         groups[key] = group
 
     assert len(groups) == 20
