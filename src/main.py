@@ -80,9 +80,9 @@ async def query(
     return {"query": q, "time": time} | paginated(limit, offset, docs[offset:offset + limit], len(docs))
 
 
-@app.get("/{doc_id}")
-async def details(doc_id: str, model: Model = Model.vectorial, dataset: Dataset = Dataset.cranfield):
-    engine = ENGINES[model][dataset]
+@app.get("/document/{dataset}/{doc_id}")
+async def details(dataset: Dataset, doc_id: str):
+    engine = ENGINES[Model.vectorial][dataset]
 
     with Session(engine.db_engine) as session:
         doc = session.exec(
