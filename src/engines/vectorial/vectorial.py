@@ -11,8 +11,8 @@ from src.utils import DocResult, QueryResults, get_terms
 from .models import (
     Term,
     Document,
-    NormTermFrequency,
     InverseDocumentFrequency,
+    WeightTermDocument,
 )
 
 
@@ -46,6 +46,7 @@ class VectorialModel(Engine):
         SQLModel.metadata.create_all(self.db_engine)
 
         idf_count: dict[str, int] = defaultdict(lambda: 0)
+        ntf_values: dict[tuple[str, str], tuple[str]] = {}
 
         with Session(self.db_engine) as session:
             seen_terms = set()
@@ -63,14 +64,7 @@ class VectorialModel(Engine):
                         seen_terms.add(term)
                         session.add(Term(id=term))
 
-                    # add normalized term frequency
-                    session.add(NormTermFrequency(
-                        term_id=term,
-                        document_id=entry.id,
-                        value=ntf
-                    ))
-
-                    # count the occurrence for idf
+                    ntf_values[(term, entry.id)] = ntf
                     idf_count[term] += 1
 
             # store the idf for every term
@@ -78,6 +72,17 @@ class VectorialModel(Engine):
                 session.add(InverseDocumentFrequency(
                     term_id=term,
                     value=log(self.dataset.total / count)
+                ))
+
+            session.commit()
+
+        # store the weight of every term for each document
+        with Session(self.db_engine) as session:
+            for (term_id, doc_id), ntf in ntf_values.items():
+                session.add(WeightTermDocument(
+                    term_id=term_id,
+                    document_id=doc_id,
+                    value=ntf * log(self.dataset.total / count)
                 ))
 
             session.commit()
@@ -124,7 +129,7 @@ class VectorialModel(Engine):
         with Session(self.db_engine) as session:
             for doc in session.exec(select(Document)):
                 sim = self._sim(query_weights, doc)
-                if sim != 0:
+                if sim > 0:
                     results.add_result(DocResult(
                         id=doc.id,
                         sim=sim,
@@ -146,19 +151,16 @@ class VectorialModel(Engine):
         doc_weights: dict[str, float] = {}
         with Session(self.db_engine) as session:
             for query_term in query_weights:
-                select_ntf = select(NormTermFrequency).where(
-                    NormTermFrequency.term_id == query_term,
-                    NormTermFrequency.document_id == doc.id
-                )
-                select_idf = select(InverseDocumentFrequency).where(
-                    InverseDocumentFrequency.term_id == query_term
-                )
-                ntf = session.exec(select_ntf).first()
-                idf = session.exec(select_idf).first()
-                if ntf is None:
+                weight_term_doc = session.exec(
+                    select(WeightTermDocument).where(
+                        WeightTermDocument.term_id == query_term,
+                        WeightTermDocument.document_id == doc.id
+                    )
+                ).first()
+                if weight_term_doc is None:
                     doc_weights[query_term] = 0
                 else:
-                    doc_weights[query_term] = ntf.value * idf.value
+                    doc_weights[query_term] = weight_term_doc.value
 
         prod_vectors = sum(doc_weights[term] * query_weights[term] for term in query_weights)
         prod_norm_vectors = (
