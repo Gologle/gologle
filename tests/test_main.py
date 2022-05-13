@@ -13,9 +13,9 @@ client = TestClient(app)
     "q, eval_len", [
         ("even event", lambda x: len(x) > 0),
         ("shock wave", lambda x: len(x) > 0),
-        ("the FLDSMDFR", lambda x: len(x) > 0),
         ("Lorem 001 ipsum", lambda x: len(x) > 0),
         ("strength", lambda x: len(x) > 0),
+        ("the FLDSMDFR", lambda x: len(x) == 0),
         ("Dumv qu3ry", lambda x: len(x) == 0),
         ("ThisGetsNoResult", lambda x: len(x) == 0),
         ("a", lambda x: len(x) == 0),
