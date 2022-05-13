@@ -2,6 +2,7 @@ from typing import Iterator
 from pathlib import Path
 
 from .base import DatasetEntry, DatasetParser
+from sklearn.feature_extraction.text import CountVectorizer
 
 
 class NewsgroupsEntry(DatasetEntry):
@@ -19,7 +20,7 @@ class NewsgroupsEntry(DatasetEntry):
 
         super(NewsgroupsEntry, self).__init__(f"{group_id}_{entry_path.name}")
 
-        self._path = entry_path
+        self.path = entry_path
         self.group = entry_path.parent.name
 
         if line1.startswith("From: "):
@@ -37,7 +38,7 @@ class NewsgroupsEntry(DatasetEntry):
 
     @property
     def raw_text(self):
-        return self._path.read_text(errors="ignore")
+        return self.path.read_text(errors="ignore")
 
 
 class NewsgroupsParser(DatasetParser):
@@ -46,6 +47,11 @@ class NewsgroupsParser(DatasetParser):
     def __init__(self):
         super(NewsgroupsParser, self).__init__(
             data=self.root / "20newsgroups-18828",
+            count_vzer=CountVectorizer(
+                input="filename",
+                decode_error="ignore",
+                stop_words="english"
+            ),
             total=18828
         )
 
@@ -58,4 +64,9 @@ class NewsgroupsParser(DatasetParser):
         assert len(self.entries) == self.total
 
     def __iter__(self) -> Iterator[NewsgroupsEntry]:
-        return iter(self.entries)
+        return iter(self.entries)\
+
+    def fit_transform(self):
+        return self.count_vzer.fit_transform(
+            tuple(str(entry.path) for entry in self)
+        )

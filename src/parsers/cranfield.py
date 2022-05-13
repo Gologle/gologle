@@ -1,7 +1,7 @@
-from abc import ABC
 from typing import Iterator
-from pathlib import Path
 import re
+
+from sklearn.feature_extraction.text import CountVectorizer
 
 from .base import DatasetEntry, DatasetParser
 
@@ -35,6 +35,11 @@ class CranfieldParser(DatasetParser):
     def __init__(self):
         super(CranfieldParser, self).__init__(
             data=self.root / "cranfield-1400" / "cran.all.1400",
+            count_vzer=CountVectorizer(
+                input="content",
+                decode_error="ignore",
+                stop_words="english",
+            ),
             total=1400
         )
 
@@ -49,3 +54,9 @@ class CranfieldParser(DatasetParser):
 
     def __iter__(self) -> Iterator[CranfieldEntry]:
         return iter(self.entries)
+
+    def fit_transform(self):
+        return self.count_vzer.fit_transform(
+            tuple(entry.raw_text for entry in self)
+        )
+

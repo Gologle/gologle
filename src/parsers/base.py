@@ -2,6 +2,8 @@ from typing import Iterator
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from sklearn.feature_extraction.text import CountVectorizer
+
 
 DATASETS_ROOT = Path("./datasets")
 
@@ -22,9 +24,11 @@ class DatasetParser(ABC):
 
     root: Path = DATASETS_ROOT
 
-    def __init__(self, data: Path, total: int):
+    def __init__(self, data: Path, count_vzer: CountVectorizer, total: int):
         self.data = data
+        self.count_vzer = count_vzer
         self.total = total
+        self.entries: list[DatasetEntry] = []
 
     @property
     def name(self) -> str:
@@ -33,3 +37,12 @@ class DatasetParser(ABC):
     @abstractmethod
     def __iter__(self) -> Iterator[DatasetEntry]:
         """Iteration over datasets must return instances of entries parsed"""
+
+    @abstractmethod
+    def fit_transform(self):
+        """Calls the method fit_transform of this instance CountVectorizer over
+        the data parsed.
+
+        Returns:
+            Document-term matrix.
+        """
