@@ -138,4 +138,8 @@ docs/report/*
 !docs/report/*.bib
 !docs/report/*.pdf
 
+# benchmarks results
+benchmarks/memory/*.bin
+benchmarks/memory/*.html
+
 *.db
