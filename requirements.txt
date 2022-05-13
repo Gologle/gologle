@@ -5,3 +5,4 @@ fastapi==0.77.1
 uvicorn==0.17.6
 requests==2.27.1
 sklearn
+memray==1.0.3
