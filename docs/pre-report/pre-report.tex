@@ -1,0 +1,92 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,
+			amssymb}
+\usepackage{graphics,
+			subfigure}
+\usepackage{lipsum}
+\usepackage{array}
+\usepackage{hyperref,
+			url}
+\usepackage[top=2.5cm, bottom=2.5cm, left=2cm, right=2cm]{geometry}
+\usepackage{float}
+\usepackage{multicol}
+\usepackage{enumerate}
+\usepackage{color,
+			xcolor}
+\usepackage{listings}
+
+\lstset{ %
+  backgroundcolor=\color[HTML]{2c3e50},   % Indica el color de fondo; necesita que se añada \usepackage{color} o \usepackage{xcolor}
+  basicstyle=\color{white}\footnotesize,        % Fija el tamaño del tipo de letra utilizado para el código
+  breakatwhitespace=false,         % Activarlo para que los saltos automáticos solo se apliquen en los espacios en blanco
+  frame=single,	                   % Añade un marco al código
+  keywordstyle=\color[HTML]{ec7063},       % estilo de las palabras clave
+  language=Python,                 % El lenguaje del código
+  numbers=left,                    % Posición de los números de línea (none, left, right).
+  numbersep=5pt,                   % Distancia de los números de línea al código
+  numberstyle=\small\color{gray},  % Estilo para los números de línea
+}
+
+\begin{document}
+
+\begin{center}
+\large{
+\rule{\textwidth}{0.5pt}
+\par Universidad de la Habana, MATCOM
+\par Sistemas de Recuperación de Información (2022)
+\vspace{0.4cm}
+\par \textcolor{cyan}{Informe de Entrega Parcial}
+\par Samuel David Suárez Rodríguez C512
+\par Enmanuel Verdesia Suárez C511
+\par Gabriel Fernando Martín Fernández C511
+\rule{\textwidth}{1.5pt}
+}
+
+%\par \textbf{Tema:} Búsqueda empleando el modelo vectorial.
+\end{center}
+
+\section{Descripción General}
+\vspace{0.5cm}
+\subsection{Resumen}
+\par Se pretende desarrollar un Sistema de Recuperación de Información (SRI) con el apoyo de técnicas de Inteligencia Artificial (IA). Dado un conjunto de varios documentos de diversos temas se desarrollará una aplicación de búsqueda que obtenga resultados relevantes y acordes a una consulta presentada por el usuario. Además se emplearán métodos para clasificar los documentos y extraer sus características más relevantes usando algoritmos para la clasificación y selección de características. También se desarrollarán herramientas para generar clústeres de documentos y agrupar los que tengan contenidos afines en un mismo grupo. Todos estos procesos de clasificación y agrupamiento se apoyarán en el uso de algoritmos de machine learning (ML) para lograr su objetivo.
+
+\subsection{Estructura del proyecto}
+\par El proyecto presenta tres componentes principales: el backend o componente lógica de la aplicación, junto con la API, y el frontend en forma de un servicio web.
+
+Está desarrollado en GitHub bajo la organización Gologle: https://github.com/Gologle.
+
+Ahí pueden ser encontrados los dos repositorios principales. Además están hospedados el cliente del sistema y la API en internet.
+
+\begin{itemize}
+  \item Web: https://gologle.vercel.app
+  \item API: https://gologle-api.herokuapp.com/
+\end{itemize}
+
+\section{Detalles de implementación}
+
+\subsection{Procesamiento de los documentos}
+Cada set de datos empleado tiene un parser asociado para extraer la información de estos y poder delimitar e identificar cada documento que contiene de forma única por un ID. Esto permite poder guardar el texto de los documentos en una base de datos SQLite y obtener un menor tiempo de respuesta ante un pedido de parte del cliente.
+
+Dado que ha sido implementado el modelo vectorial, haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para tokenizar los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
+
+A partir del conjunto de documentos se obtiene una matriz esparcida que representa la cantidad de veces que aparece el término $i$ en el documento $j$. Sobre esta matriz nos apoyamos para calcular la frecuencia de documentos inversa ($idf$) para cada término. Luego haciendo uso de la clase \verb+sklearn.feature_extraction.text.TfidfTransformer+ calculamos los pesos para cada término en cada documento. Hecho esto, se tiene la matriz esparcida de los pesos, la cual es guardada en la base de datos para agilizar el tiempo de respuesta.
+
+Resumiendo el proceso antes descrito, la base de datos es considerada el índice de nuestro sistema. Almacena los documentos, los términos, $idf$ para cada término y pesos de los términos en cada documento. Su objetivo es agilizar el tiempo de respuesta.
+
+\subsection{Recuperación de Información}
+
+Cuando es recibida una consulta esta es procesada de forma similar a como se procesa un documento. Se calcula el peso para cada término y la similitud entre el vector obtenido y los documentos de la base de datos usando como valor el coseno del ángulo entre estos. Los documentos con mayor similitud son dados como resultado.
+
+
+\section{Próximos Pasos}
+
+  \begin{itemize}
+    \item Implementar métricas para valorar la efectividad de un modelo.
+    \item Implementar modelos más efectivos y comparar resultados.
+    \item Añadir más sets de datos.
+    \item Mejorar el tiempo de respuesta.
+  \end{itemize}
+
+\end{document}

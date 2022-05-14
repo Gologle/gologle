@@ -132,11 +132,11 @@ dmypy.json
 .idea/
 
 # report stuff
-docs/report/*
-!docs/report/*.tex
-!docs/report/*.cls
-!docs/report/*.bib
-!docs/report/*.pdf
+docs/*/*
+!docs/*/*.tex
+!docs/*/*.cls
+!docs/*/*.bib
+!docs/*/*.pdf
 
 # benchmarks results
 benchmarks/memory/*.bin
