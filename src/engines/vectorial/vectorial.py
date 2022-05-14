@@ -47,17 +47,16 @@ class VectorialModel(Engine):
         """Builds the index of the engine in a sqlite database."""
         SQLModel.metadata.create_all(self.db_engine)
 
-        #############################################
         X = self.dataset.fit_transform()
         transformer = TfidfTransformer()
         tfidf = transformer.fit_transform(X)
 
-        with Session(self.db_engine) as session:
+        with DatabaseBatchCommit(self.db_engine) as batcher:
             # add the documents to the db for faster access
             ts = time()
             print("Adding Documents to db... ", end="")
             for entry in self.dataset:
-                session.add(Document(id=entry.id, text=entry.raw_text))
+                batcher.add(Document(id=entry.id, text=entry.raw_text))
             print(f"Done, took {round(time() - ts, 2)} seconds.")
 
             print("Adding Terms and IDFs to db... ", end="")
@@ -66,19 +65,16 @@ class VectorialModel(Engine):
                 term_index = self.dataset.count_vzer.vocabulary_[term]
 
                 # store the term and its idf
-                session.add(Term(id=term))
-                session.add(InverseDocumentFrequency(
+                batcher.add(Term(id=term))
+                batcher.add(InverseDocumentFrequency(
                     term_id=term,
                     value=transformer.idf_[term_index]
                 ))
             print(f"Done, took {round(time() - ts, 2)} seconds.")
 
-            session.commit()
-
-        print("Adding Weights to db... ", end="")
-        ts = time()
-        inv_feat = {v: k for k, v in self.dataset.count_vzer.vocabulary_.items()}
-        with DatabaseBatchCommit(self.db_engine) as batcher:
+            print("Adding Weights to db... ", end="")
+            ts = time()
+            inv_feat = {v: k for k, v in self.dataset.count_vzer.vocabulary_.items()}
             for i, x in enumerate(tfidf):
                 for j, v in zip(x.indices, x.data):
                     batcher.add(WeightTermDocument(
@@ -86,7 +82,7 @@ class VectorialModel(Engine):
                         document_id=self.dataset.entries[i].id,
                         value=v
                     ))
-        print(f"Done, took {round(time() - ts, 2)} seconds.")
+            print(f"Done, took {round(time() - ts, 2)} seconds.")
 
     @staticmethod
     def _ntf(terms: Iterable[str]) -> dict[str, float]:
