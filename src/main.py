@@ -29,7 +29,7 @@ class Model(Enum):
 ENGINES = {
     Model.vectorial: {
         Dataset.cranfield: VectorialModel(CranfieldParser()),
-        # Dataset.newsgroups: VectorialModel(NewsgroupsParser()),
+        Dataset.newsgroups: VectorialModel(NewsgroupsParser()),
     }
 }
 
