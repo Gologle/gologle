@@ -1,3 +1,4 @@
+import context
 from src.parsers import NewsgroupsParser
 from src.engines.vectorial import VectorialModel
 
