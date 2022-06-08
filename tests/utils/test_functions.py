@@ -8,11 +8,11 @@ from src.utils.functions import get_terms
         ("", tuple()),
         (
             "Lorem ipsum, dolor sit amet.",
-            ("Lorem", "ipsum", "dolor", "sit", "amet", )
+            ("lorem", "ipsum", "dolor", "sit", "amet", )
         ),
         (
             "Ultricies mi eget! Mauris pharetra?",
-            ("Ultricies", "mi", "eget", "Mauris", "pharetra", )
+            ("ultricies", "mi", "eget", "mauris", "pharetra", )
         ),
         (
             "Y neque a suspendisse. E interdum.",
