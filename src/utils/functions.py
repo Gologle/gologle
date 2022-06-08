@@ -14,6 +14,6 @@ def get_terms(text: str) -> tuple[str]:
     return tuple(
         filter(
             lambda x: len(x) > 1,   # get rid of small terms
-            re.split(r"[\s\,\.\!\?\(\)\[\]/\\\{\}'\"]", text)
+            re.split(r"[\s\,\.\!\?\(\)\[\]/\\\{\}'\"]", text.lower())
         )
     )
