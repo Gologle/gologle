@@ -3,6 +3,7 @@ import re
 
 from sklearn.feature_extraction.text import CountVectorizer
 
+from src.utils import DocResult
 from .base import DatasetEntry, DatasetParser
 
 
@@ -60,3 +61,41 @@ class CranfieldParser(DatasetParser):
             tuple(entry.raw_text for entry in self)
         )
 
+    def get_test_cases(self) -> dict[str, list[DocResult]]:
+        """Gets the queries from cran.qry file and the relevance from cranqrel.
+        There are queries with no relevance related and vice versa. Only are being
+        used the results with relevance 1, 2, 3 or 4, in agreement with the description
+        in cranqel.readme file.
+
+         Returns:
+             A dict that maps the query text with the list of relevant DocResult for it.
+         """
+        cran_qry_text = (self.root / "cranfield-1400" / "cran.qry").read_text(encoding="utf8")
+        cran_qry_regex = r".I (\d+)\n.W\n([\w\W]+?)\n((?=.I)|$)"
+        cranqrel_text = (self.root / "cranfield-1400" / "cranqrel").read_text(encoding="utf8")
+
+        queries: dict[str, str] = {}
+        for id_, query, _ in re.findall(cran_qry_regex, cran_qry_text):
+            # converts '001' to '1'
+            queries[str(int(id_))] = query
+
+        test_cases: dict[str, list[DocResult]] = {}
+        for line in cranqrel_text.split("\n"):
+            query_number, doc_id, rel, *_ = line.split(" ")
+
+            if rel not in ("1", "2", "3", "4"):
+                continue
+
+            try:
+                query = queries[query_number]
+            except KeyError:
+                continue
+
+            doc = DocResult(id=doc_id, sim=float(rel), description="")
+
+            if query in test_cases:
+                test_cases[query].append(doc)
+            else:
+                test_cases[query] = [doc]
+
+        return test_cases
