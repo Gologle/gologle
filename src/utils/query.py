@@ -23,13 +23,13 @@ class DocResult(BaseModel):
 
 
 class QueryResults(BaseModel):
-    ranking: bool = True
+    use_rank: bool = True
     max_length: int = 10
     docs: list[DocResult] = []
 
     def add_result(self, result: DocResult) -> None:
-        """Adds results to the ranking, represented by a heap."""
-        if not self.ranking:
+        """Adds results to the docs, represented by a heap if use_rank is used."""
+        if not self.use_rank:
             self.docs.append(result)
         else:
             if len(self.docs) < self.max_length:
@@ -39,7 +39,7 @@ class QueryResults(BaseModel):
 
     @property
     def rank(self) -> list[DocResult]:
-        if self.ranking:
+        if self.use_rank:
             return sorted(self.docs, reverse=True)
         else:
             return self.docs

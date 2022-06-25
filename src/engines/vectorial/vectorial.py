@@ -1,10 +1,8 @@
 from typing import Iterable
-from pathlib import Path
-from collections import defaultdict
-from math import log, sqrt
+from math import sqrt
 from time import time
 
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import SQLModel, Session, select
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from src.engines import Engine
@@ -36,11 +34,8 @@ class VectorialModel(Engine):
         super(VectorialModel, self).__init__("Vectorial Model", dataset)
 
         self.softened = softened
-        self.db = Path(f"{self.dataset.name}({self.name}).db")
-        update_db = not self.db.is_file()
-        self.db_engine = create_engine("sqlite:///" + self.db.name)
 
-        if update_db:
+        if not self.db.is_file():
             self.update_index()
 
     def _update_index(self) -> None:
@@ -122,7 +117,7 @@ class VectorialModel(Engine):
             for term in query_terms
         }
 
-        results = QueryResults(ranking=True, max_length=max_length)
+        results = QueryResults(max_length=max_length)
         with Session(self.db_engine) as session:
             for doc in session.exec(select(Document)):
                 sim = self._sim(query_weights, doc)
