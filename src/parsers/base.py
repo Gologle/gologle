@@ -4,6 +4,8 @@ from pathlib import Path
 
 from sklearn.feature_extraction.text import CountVectorizer
 
+from src.utils import DocResult
+
 
 DATASETS_ROOT = Path("./datasets")
 
@@ -45,4 +47,13 @@ class DatasetParser(ABC):
 
         Returns:
             Document-term matrix.
+        """
+
+    @abstractmethod
+    def get_test_cases(self) -> dict[str, list[DocResult]]:
+        """Gets a map of queries with its expected documents as result for the
+        dataset.
+
+        Returns:
+            A dict mapping a query to its list of relevant documents.
         """
