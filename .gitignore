@@ -143,3 +143,4 @@ benchmarks/memory/*.bin
 benchmarks/memory/*.html
 
 *.db
+*.model

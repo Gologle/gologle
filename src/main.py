@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 
 from src.parsers import CranfieldParser, NewsgroupsParser
-from src.engines.vectorial.vectorial import VectorialModel
+from src.engines.vectorial import VectorialModel
+from src.engines.doc2vec import Doc2VecModel
 from src.engines.models import Document
 from src.utils.timeit import timed
 
@@ -24,12 +25,20 @@ class Dataset(Enum):
 
 class Model(Enum):
     vectorial = "vectorial"
+    doc2vec = "doc2vec"
 
+
+CRANFIELD = CranfieldParser()
+NEWSGROUPS = NewsgroupsParser()
 
 ENGINES = {
     Model.vectorial: {
-        Dataset.cranfield: VectorialModel(CranfieldParser()),
-        Dataset.newsgroups: VectorialModel(NewsgroupsParser()),
+        Dataset.cranfield: VectorialModel(CRANFIELD),
+        Dataset.newsgroups: VectorialModel(NEWSGROUPS),
+    },
+    Model.doc2vec: {
+        Dataset.cranfield: Doc2VecModel(CRANFIELD),
+        Dataset.newsgroups: Doc2VecModel(NEWSGROUPS),
     }
 }
 
