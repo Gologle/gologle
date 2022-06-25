@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlmodel import create_engine
 
 from src.parsers import DatasetParser
-from src.utils import QueryResults
+from src.utils import QueryResults, TimeLogger
 
 
 class Engine(ABC):
@@ -24,13 +24,14 @@ class Engine(ABC):
     def update_index(self):
         """Indexes all the documents of the dataset. This is an expensive method
         that must be called only if new documents are added."""
-        ts = time()
-        print(f"Creating index for {self.name} ({self.dataset.name})...")
-        self._update_index()
-        print(
-            f"Created index for {self.name} ({self.dataset.name}). "
-            f"Took {round((time() - ts), 2)} seconds."
-        )
+        with TimeLogger(
+            enter_msg=f"Creating index for {self.name} ({self.dataset.name})...",
+            exit_msg=(
+                f"Created index for {self.name} ({self.dataset.name}). "
+                f"Took %F seconds."
+            )
+        ):
+            self._update_index()
 
     @abstractmethod
     def _update_index(self):

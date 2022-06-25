@@ -1,13 +1,12 @@
 from typing import Iterable
 from math import sqrt
-from time import time
 
 from sqlmodel import SQLModel, Session, select
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from src.engines import Engine
 from src.parsers import DatasetParser
-from src.utils import DocResult, QueryResults, get_terms, DatabaseBatchCommit
+from src.utils import DocResult, QueryResults, get_terms, DatabaseBatchCommit, TimeLogger
 from .models import (
     Term,
     Document,
@@ -48,36 +47,30 @@ class VectorialModel(Engine):
 
         with DatabaseBatchCommit(self.db_engine) as batcher:
             # add the documents to the db for faster access
-            ts = time()
-            print("Adding Documents to db... ", end="")
-            for entry in self.dataset:
-                batcher.add(Document(id=entry.id, text=entry.raw_text))
-            print(f"Done, took {round(time() - ts, 2)} seconds.")
+            with TimeLogger("Adding Documents to db... "):
+                for entry in self.dataset:
+                    batcher.add(Document(id=entry.id, text=entry.raw_text))
 
-            print("Adding Terms and IDFs to db... ", end="")
-            ts = time()
-            for term in self.dataset.count_vzer.get_feature_names_out():
-                term_index = self.dataset.count_vzer.vocabulary_[term]
+            with TimeLogger("Adding Terms and IDFs to db... "):
+                for term in self.dataset.count_vzer.get_feature_names_out():
+                    term_index = self.dataset.count_vzer.vocabulary_[term]
 
-                # store the term and its idf
-                batcher.add(Term(id=term))
-                batcher.add(InverseDocumentFrequency(
-                    term_id=term,
-                    value=transformer.idf_[term_index]
-                ))
-            print(f"Done, took {round(time() - ts, 2)} seconds.")
-
-            print("Adding Weights to db... ", end="")
-            ts = time()
-            inv_feat = {v: k for k, v in self.dataset.count_vzer.vocabulary_.items()}
-            for i, x in enumerate(tfidf):
-                for j, v in zip(x.indices, x.data):
-                    batcher.add(WeightTermDocument(
-                        term_id=inv_feat[j],
-                        document_id=self.dataset.entries[i].id,
-                        value=v
+                    # store the term and its idf
+                    batcher.add(Term(id=term))
+                    batcher.add(InverseDocumentFrequency(
+                        term_id=term,
+                        value=transformer.idf_[term_index]
                     ))
-            print(f"Done, took {round(time() - ts, 2)} seconds.")
+
+            with TimeLogger("Adding Weights to db... "):
+                inv_feat = {v: k for k, v in self.dataset.count_vzer.vocabulary_.items()}
+                for i, x in enumerate(tfidf):
+                    for j, v in zip(x.indices, x.data):
+                        batcher.add(WeightTermDocument(
+                            term_id=inv_feat[j],
+                            document_id=self.dataset.entries[i].id,
+                            value=v
+                        ))
 
     @staticmethod
     def _ntf(terms: Iterable[str]) -> dict[str, float]:

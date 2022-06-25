@@ -53,11 +53,9 @@ class Doc2VecModel(Engine):
         SQLModel.metadata.create_all(self.db_engine)
 
         with DatabaseBatchCommit(self.db_engine) as batcher:
-            ts = time()
-            print("Adding Documents to db...", end="")
-            for entry in self.dataset:
-                batcher.add(Document(id=entry.id, text=entry.raw_text))
-            print(f"Done, took {round(time() - ts, 2)} seconds.")
+            with TimeLogger("Adding Documents to db... "):
+                for entry in self.dataset:
+                    batcher.add(Document(id=entry.id, text=entry.raw_text))
 
     def answer(self, query: str, max_length: int) -> QueryResults:
         query = simple_preprocess(query)

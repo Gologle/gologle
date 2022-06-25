@@ -17,14 +17,21 @@ def timed(method, *args, **kwargs):
 class TimeLogger(ContextDecorator):
     start = None
 
-    def __init__(self, message):
+    def __init__(self, enter_msg: str, exit_msg="Done, took %f seconds."):
+        """
+        Args:
+            enter_msg: string to be printed when starts the execution
+            exit_msg: string to be printed when ends the execution. Must contain
+                a `%f` formatter where set the elapsed time.
+        """
         super(TimeLogger, self).__init__()
-        self.message = message
+        self.enter_msg = enter_msg
+        self.exit_msg = exit_msg
 
     def __enter__(self):
-        print(self.message, end="", flush=True)
+        print(self.enter_msg, end="", flush=True)
         self.start = time.time()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed_time = round(time.time() - self.start, 2)
-        print(f"Done, took {elapsed_time} seconds.", flush=True)
+        print(self.exit_msg % elapsed_time, flush=True)
