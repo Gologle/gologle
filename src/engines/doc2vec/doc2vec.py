@@ -1,4 +1,4 @@
-from time import time
+from __future__ import annotations
 from pathlib import Path
 
 from sqlmodel import SQLModel
@@ -13,14 +13,17 @@ from src.engines.models import Document
 
 class Doc2VecModel(Engine):
 
-    def __init__(self, dataset: DatasetParser):
+    def __init__(self, dataset: DatasetParser, model_path: Path | None = None):
         """
         Args:
             dataset: dataset with the entries parsed
         """
         super(Doc2VecModel, self).__init__("Doc2Vec Model", dataset)
 
-        self.model_path = Path(f"{self.dataset.name}({self.name}).model")
+        if model_path is None:
+            self.model_path = Path(f"{self.dataset.name}({self.name}).model")
+        else:
+            self.model_path = model_path
 
         if not self.model_path.is_file():
             self._train_model()
@@ -38,7 +41,7 @@ class Doc2VecModel(Engine):
             tokens = simple_preprocess(entry.raw_text)
             tagged_docs.append(TaggedDocument(tokens, [entry.id]))
 
-        self.model = Doc2Vec(vector_size=100, min_count=2, epochs=40)
+        self.model = Doc2Vec(vector_size=50, min_count=2, epochs=200)
         self.model.build_vocab(tagged_docs)
         with TimeLogger(f"Training {self.name} with dataset {self.dataset.name}... "):
             self.model.train(
@@ -60,8 +63,7 @@ class Doc2VecModel(Engine):
     def answer(self, query: str, max_length: int) -> QueryResults:
         query = simple_preprocess(query)
         inferred_vector = self.model.infer_vector(query)
-        sims = self.model.dv.most_similar([inferred_vector], max_length)
-        print(*sims, sep="\n")
+        sims = self.model.dv.most_similar([inferred_vector], topn=max_length)
 
         results = QueryResults(use_rank=False, max_length=max_length)
         for doc_id, sim in sims:
