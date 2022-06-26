@@ -70,3 +70,7 @@ class NewsgroupsParser(DatasetParser):
         return self.count_vzer.fit_transform(
             tuple(str(entry.path) for entry in self)
         )
+
+    def get_test_cases(self):
+        raise NotImplementedError()
+
