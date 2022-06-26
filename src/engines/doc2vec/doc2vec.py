@@ -1,14 +1,15 @@
 from time import time
 from pathlib import Path
 
-from sqlmodel import SQLModel
+from sklearn.metrics.pairwise import cosine_distances
+from sqlmodel import SQLModel, Session, select
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.utils import simple_preprocess
 
 from src.engines import Engine
 from src.parsers import DatasetParser
 from src.utils import DatabaseBatchCommit, TimeLogger, QueryResults, DocResult
-from src.engines.models import Document
+from src.engines.models import Document, Feedback
 
 
 class Doc2VecModel(Engine):
@@ -57,9 +58,61 @@ class Doc2VecModel(Engine):
                 for entry in self.dataset:
                     batcher.add(Document(id=entry.id, text=entry.raw_text))
 
+    def _get_docs_by_feedback(self, session: Session, relevance: int, query: str):
+        """Filter all docs with Document.feedback.relevance == relevance"""
+        query_vector = self.model.infer_vector(simple_preprocess(query))
+        feedbacks = session.exec(
+            select(Feedback).where(
+                Feedback.relevance == relevance)
+        ).all()
+
+        # Filter feedback instances by it's query cosine distance
+        filtered = []
+        for feedback in feedbacks:
+            fq_query = self.model.infer_vector(
+                simple_preprocess(feedback.query))
+            distance = cosine_distances([query_vector, fq_query])[0, 1]
+            print(
+                f"Distance between {query}-{feedback.query} in doc {feedback.document_id}: {distance}")
+            if distance <= .3:
+                filtered.append(feedback)
+
+        doc_ids = [f.document_id for f in filtered]
+        docs_related = session.exec(
+            select(Document).where(Document.id.in_(doc_ids))
+        ).all()
+        return docs_related
+
+    def apply_feedback(self, query: str):
+        """Optimize query string based on known feedback applying Rocchio algorithm
+            q' = q + rel_doc * beta - nonrel_doc * gamma
+        """
+        query_vector = self.model.infer_vector(
+            simple_preprocess(query.lower()))
+
+        with Session(self.db_engine) as session:
+            relevant_docs = self._get_docs_by_feedback(session, 1, query)
+            non_relevant_docs = self._get_docs_by_feedback(session, -1, query)
+
+            beta = 0 if len(relevant_docs) == 0 else 0.75 / len(relevant_docs)
+            gamma = 0 if len(non_relevant_docs) == 0 else 0.15 / \
+                len(non_relevant_docs)
+
+            for doc in relevant_docs:
+                doc_vector = self.model.infer_vector(
+                    simple_preprocess(doc.text))
+                query_vector = query_vector + beta * doc_vector
+
+            for doc in non_relevant_docs:
+                doc_vector = self.model.infer_vector(
+                    simple_preprocess(doc.text))
+                query_vector = query_vector - gamma * doc_vector
+
+        return query_vector
+
     def answer(self, query: str, max_length: int) -> QueryResults:
-        query = simple_preprocess(query)
-        inferred_vector = self.model.infer_vector(query)
+        inferred_vector = self.apply_feedback(query)
+
         sims = self.model.dv.most_similar([inferred_vector], max_length)
         print(*sims, sep="\n")
 
