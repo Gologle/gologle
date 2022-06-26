@@ -83,8 +83,9 @@ class Doc2VecModel(Engine):
 
         # doc_ids = [f.document_id for f in filtered]
         doc_ids = session.exec(
-            select(Feedback).where(Feedback.id.in_(filtered))
+            select(Feedback.document_id).where(Feedback.query.in_(filtered))
         ).all()
+        print(doc_ids)
         docs_related = session.exec(
             select(Document).where(Document.id.in_(doc_ids))
         ).all()
