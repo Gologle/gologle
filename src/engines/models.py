@@ -1,4 +1,5 @@
-from sqlmodel import SQLModel, Field
+from typing import List, Optional
+from sqlmodel import Relationship, SQLModel, Field
 
 
 # The use of the term text as id is for simplicity.
@@ -10,3 +11,14 @@ class Term(SQLModel, table=True):
 class Document(SQLModel, table=True):
     id: str = Field(primary_key=True)
     text: str
+
+    feedbacks: List["Feedback"] = Relationship(back_populates="document")
+
+
+class Feedback(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    query: str
+    document_id: str = Field(default=None, foreign_key="document.id")
+    relevance: float
+
+    document: Optional[Document] = Relationship(back_populates="feedbacks")
