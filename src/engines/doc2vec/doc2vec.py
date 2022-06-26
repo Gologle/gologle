@@ -66,7 +66,8 @@ class Doc2VecModel(Engine):
         query_vector = self.model.infer_vector(simple_preprocess(query))
         feedbacks = session.exec(
             select(Feedback).where(
-                Feedback.relevance == relevance)
+                Feedback.relevance == relevance).group_by(
+                    Feedback.query)
         ).all()
 
         # Filter feedback instances by it's query cosine distance
@@ -78,9 +79,12 @@ class Doc2VecModel(Engine):
             print(
                 f"Distance between {query}-{feedback.query} in doc {feedback.document_id}: {distance}")
             if distance <= .3:
-                filtered.append(feedback)
+                filtered.append(feedback.query)
 
-        doc_ids = [f.document_id for f in filtered]
+        # doc_ids = [f.document_id for f in filtered]
+        doc_ids = session.exec(
+            select(Feedback).where(Feedback.id.in_(filtered))
+        ).all()
         docs_related = session.exec(
             select(Document).where(Document.id.in_(doc_ids))
         ).all()
@@ -102,20 +106,20 @@ class Doc2VecModel(Engine):
                 len(non_relevant_docs)
 
             for doc in relevant_docs:
-                doc_vector = self.model.infer_vector(
-                    simple_preprocess(doc.text))
-                query_vector = query_vector + beta * doc_vector
+                # doc_vector = self.model.infer_vector(
+                #     simple_preprocess(doc.text))
+                query_vector = query_vector + beta * self.model.dv[doc.id]
 
             for doc in non_relevant_docs:
-                doc_vector = self.model.infer_vector(
-                    simple_preprocess(doc.text))
-                query_vector = query_vector - gamma * doc_vector
+                # doc_vector = self.model.infer_vector(
+                #     simple_preprocess(doc.text))
+                query_vector = query_vector - gamma * self.model.dv[doc.id]
 
         return query_vector
 
     def answer(self, query: str, max_length: int) -> QueryResults:
-        query = simple_preprocess(query)
-        inferred_vector = self.model.infer_vector(query)
+        inferred_vector = self.apply_feedback(query)
+
         sims = self.model.dv.most_similar([inferred_vector], topn=max_length)
 
         results = QueryResults(use_rank=False, max_length=max_length)
