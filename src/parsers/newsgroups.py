@@ -40,6 +40,10 @@ class NewsgroupsEntry(DatasetEntry):
     def raw_text(self):
         return self.path.read_text(errors="ignore")
 
+    @property
+    def main_content(self):
+        return self.text
+
 
 class NewsgroupsParser(DatasetParser):
     """Parser for the 20 Newsgroups dataset"""

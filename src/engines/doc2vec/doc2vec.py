@@ -37,9 +37,7 @@ class Doc2VecModel(Engine):
     def _train_model(self) -> None:
         tagged_docs = []
         for entry in self.dataset:
-            # TODO: use the raw text may no be the best approach, can be
-            #  declared an abstract property for the main content of a document
-            tokens = simple_preprocess(entry.raw_text)
+            tokens = simple_preprocess(entry.main_content)
             tagged_docs.append(TaggedDocument(tokens, [entry.id]))
 
         self.model = Doc2Vec(vector_size=50, min_count=2, epochs=200)

@@ -21,6 +21,11 @@ class DatasetEntry(ABC):
         """This property is intended to return the raw text of the document for
         this parsed entry"""
 
+    @property
+    @abstractmethod
+    def main_content(self):
+        """Relevant text of the document."""
+
 
 class DatasetParser(ABC):
 
