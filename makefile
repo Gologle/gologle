@@ -5,7 +5,7 @@ test:
 	python -m pytest
 
 run:
-	uvicorn src.main:app
+	uvicorn src.main:app --reload
 
 BENCH_MEM_PATH := benchmarks/memory
 
