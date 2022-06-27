@@ -1,9 +1,11 @@
 from typing import Iterator
 import re
 
+
 from sklearn.feature_extraction.text import CountVectorizer
 
 from .base import DatasetEntry, DatasetParser
+from src.utils.functions import lemmatize_query
 
 
 class CranfieldEntry(DatasetEntry):
@@ -56,7 +58,4 @@ class CranfieldParser(DatasetParser):
         return iter(self.entries)
 
     def fit_transform(self):
-        return self.count_vzer.fit_transform(
-            tuple(entry.raw_text for entry in self)
-        )
-
+        return self.count_vzer.fit_transform([lemmatize_query(entry.raw_text) for entry in self])

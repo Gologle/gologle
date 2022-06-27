@@ -1,12 +1,14 @@
 from typing import Iterable
 from math import sqrt
 
+from gensim.utils import simple_preprocess
 from sqlmodel import SQLModel, Session, select
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from src.engines import Engine
 from src.parsers import DatasetParser
 from src.utils import DocResult, QueryResults, get_terms, DatabaseBatchCommit, TimeLogger
+from src.utils.functions import lemmatize_query
 from .models import (
     Term,
     Document,
@@ -63,7 +65,8 @@ class VectorialModel(Engine):
                     ))
 
             with TimeLogger("Adding Weights to db... "):
-                inv_feat = {v: k for k, v in self.dataset.count_vzer.vocabulary_.items()}
+                inv_feat = {v: k for k,
+                            v in self.dataset.count_vzer.vocabulary_.items()}
                 for i, x in enumerate(tfidf):
                     for j, v in zip(x.indices, x.data):
                         batcher.add(WeightTermDocument(
@@ -94,7 +97,10 @@ class VectorialModel(Engine):
         return {term: count / max_term for term, count in term_count.items()}
 
     def answer(self, query: str, max_length: int) -> QueryResults:
-        query_terms = get_terms(query)
+        lemmatized = lemmatize_query(query)
+        print("original", query)
+        print("lemmatized", lemmatized)
+        query_terms = get_terms(lemmatized)
         query_ntf = VectorialModel._ntf(query_terms)
         query_idf: dict[str, float] = {}
         with Session(self.db_engine) as session:
@@ -106,7 +112,8 @@ class VectorialModel(Engine):
                 query_idf[term] = 0 if db_term is None else db_term.value
 
         query_weights = {
-            term: (self.softened + (1 - self.softened) * query_ntf[term]) * query_idf[term]
+            term: (self.softened + (1 - self.softened)
+                   * query_ntf[term]) * query_idf[term]
             for term in query_terms
         }
 
@@ -147,7 +154,8 @@ class VectorialModel(Engine):
                 else:
                     doc_weights[query_term] = weight_term_doc.value
 
-        prod_vectors = sum(doc_weights[term] * query_weights[term] for term in query_weights)
+        prod_vectors = sum(
+            doc_weights[term] * query_weights[term] for term in query_weights)
         prod_norm_vectors = (
             sqrt(sum(weight ** 2 for weight in doc_weights.values())) +
             sqrt(sum(weight ** 2 for weight in query_weights.values()))
