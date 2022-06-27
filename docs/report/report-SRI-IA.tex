@@ -17,7 +17,7 @@
 \par Universidad de la Habana, MATCOM
 \par Sistemas de Recuperación de Información (2022)
 \vspace{0.4cm}
-\par \textcolor{cyan}{Informe de Entrega Parcial}
+\par \textcolor{cyan}{Informe de Entrega Final}
 \par Samuel David Suárez Rodríguez C512
 \par Enmanuel Verdesia Suárez C511
 \par Gabriel Fernando Martín Fernández C511
@@ -30,7 +30,7 @@
 \section{Descripción General}
 \vspace{0.5cm}
 \subsection{Resumen}
-\par Se pretende desarrollar un Sistema de Recuperación de Información (SRI) con el apoyo de técnicas de Inteligencia Artificial (IA). Dado un conjunto de varios documentos de diversos temas se desarrollará una aplicación de búsqueda que obtenga resultados relevantes y acordes a una consulta presentada por el usuario. Además se emplearán métodos para clasificar los documentos y extraer sus características más relevantes usando algoritmos para la clasificación y selección de características. Todos estos procesos de clasificación se apoyarán en el uso de algoritmos de machine learning (ML) para lograr su objetivo.
+\par Se desarrolló un Sistema de Recuperación de Información (SRI) empleando dos modelos vectoriales para la recuperación de datos, uno de ellos el empleando una bolsa de palabras el otro usando doc2vec. Dado un conjunto de varios documentos de diversos temas la aplicación realiza una búsqueda que obtiene resultados relevantes y acordes a una consulta presentada por el usuario. Además se emplearon métodos para clasificar los documentos y extraer sus características más relevantes usando algoritmos supervisados para la clasificación y selección de características.
 
 \subsection{Estructura del proyecto}
 \par El proyecto presenta tres componentes principales: el backend o componente lógica de la aplicación, junto con la API, y el frontend en forma de un servicio web.
@@ -48,9 +48,9 @@ Está desarrollado en GitHub bajo la organización \href{https://github.com/Golo
 
 Para cada set de datos empleado fue implementado un parser para extraer su información. Este proceso no se pudo realizar de forma común pues cada set contenía los documentos de forma particular. Una vez \textit{parseados} los sets de datos se puede delimitar e identificar cada documento que contiene de forma única por un ID y así guardar el texto de los documentos en una base de datos SQLite. Dicha base de datos facilita obtener un menor tiempo de respuesta ante un pedido de parte del cliente.
 
-Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Newsgroups (18828 documentos) y Reuters (????? documentos). Se contaba con consultas y resultados relevantes para Cranfield. {\color{red}Que se tiene en Newsgroups y/o Reuters?}
+Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Newsgroups (18828 documentos) y Reuters (10788 documentos). Se contaba con consultas y resultados relevantes para Cranfield. Para  Newsgroups se tenían clasificaciones exclusivas de los documentos con cierto carácter jerárquico que se pueden considerar de cierta forma como clústers. En Reuters se contaban con clasificaciones no exclusivas para los documentos. Estos últimos sets fueron empleados para implemtentar algoritmos de clasificación de documentos.
 
-\section{Modelo Vectorial (TF-IDF)}
+\section{Modelo Vectorial (TF-IDF) \cite{conf} } 
 
 Este modelo esta basado en la representación de los documentos mediante \textit{bag-of-words}. Es decir, se transforma cada documento a una vector de tamaño fijo que solo contiene información de la cantidad de veces que aparece cada palabra por componente. Este modelo a pesar de ser efectivo tiene como debilidad que se pierde la información respecto al orden de las palabras, además, como no aprende el significado de las palabras, la distancia entre vectores no siempre representa una diferencia en el significado. 
 
@@ -209,7 +209,8 @@ precision: 0.08333333333333333    recall: 0.25
 
 Query: can a criterion be developed to show empirically the
 validity of flow solutions for chemically reacting gas mixtures
-based on the simplifying assumption of instantaneous local chemical equilibrium .
+based on the simplifying assumption of instantaneous local
+chemical equilibrium .
 Relevant: [20, 48, 58, 122, 196, 197, 354, 360, 999, 1005, 1112]
 Retrieved: [309, 1255, 507, 319, 873, 1123, 1275, 1244, 669, 456,
 299, 348, 493, 1301, 21, 531, 629, 625, 1026, 539, 1224, 17, 436,
@@ -220,15 +221,111 @@ f1 score: 0 precision: 0.0    recall: 0.0
 
 \subsection{Métricas subjetivas}
 
-Métricas objetivas y subjetivas estudiadas empleando 2 colecciones
+El sistema ofrece una interfaz web que permite el acceso a múltiples usuarios de forma concurrente. El tiempo demorado en dar respuesta a una consulta es mostrado en la cabecera de los resultados junto con la cantidad de documentos recuperados.
 
-Mostrar consultas con los resultados (al menos 1 por colección)
+Las consultas del modelo basado en Doc2Vec son considerablemente más rápidas que el modelo TF-IDF. El tiempo de respuesta en TF-IDF aumenta considerablemente con el tamaño de la consulta, no así con el otro modelo.
+
+En base a esto el usuario puede escoger que modelo utilizar para realizar sus consultas y sobre que set de datos realizarlo.
+
+También se ofrece la funcionalidad de dar retroalimentación. Cada modelo se puede beneficiar del feedback proveído para responder las consultas a todos los usuarios.
 
 \section{Ventajas y Desventajas del Sistema}
 
 El Sistema de Recuperación de Información presentado presenta un conjunto de ventajas que permiten una buena aproximación a la búsqueda de resultados en distintos datasets, pues permite utilizar dos modelos con características diferentes en dependencia del tipo de búsqueda que se quiera realizar, en caso de búsquedas para palabras clave exactas o semiexactas (lemmatize) se puede utilizar el modelo vectorial, y para consultas en donde no importa mucho el matching exacto de las palabras sino su significado semántico se puede utilizar el modelo doc2vec, esto permite obtener resultados diferentes y abarcar documentos relevantes de distinto tipo. Otra ventaja es el soporte de retroalimentación para el modelo doc2vec, pudiendo usarla para la mejora de las respuestas, lo que permite que el SRI se adapte a las necesidades del usuario. Además, como detalles técnicos, proponemos una arquitectura escalable, a través de una API, que permite tener varias instancias del servidor corriendo de manera horizontal.
 
 Como desventajas tenemos la incapacidad de procesar consultas demasiado largas con el modelo doc2vec, ya que la representación espacial para vectores de varias palabras puede resultar en un vector de embeddings que no se encuentre cercano a ningún grupo de datos específicos en el espacio, esto pasa también al usar Rocchio para la retroalimentación, pues la sobrecarga de retroalimentación, sobre todo negativa y hacia documentos no muy relacionados en la representación de embeddings, provoca que no exista un centroide bien definido y por tanto el nuevo vector consulta tenga documentos irrelevantes cercanos.
+
+\section{Clasificación}
+
+La clasificación de documentos puede ser de utilidad para mejorar los resultados de las búsquedas o incluso simplemente para mostrar más información de los documentos retornados. Para los documentos de los datasets de Reuters y Newsgroups se implementaron 6 tipos distintos de clasificaciones y se evaluaron los resultados. Los clasificadores empleados fueron: Multinomial Naive Bayes, Logistic Regression, K Neighbors Classifier (con k = 5), Decision Tree Classifier y Random Forest Classifier. Para los dos conjuntos de documentos se asumió que se tenía un problema de clasificación múltiple aunque en el dataset de Newsgroups no es el caso. Para evaluar los resultados se calcularon varias de las medidas del promedio f1-score, la micro, macro, teniendo en cuenta los pesos y el de las muestras. En vez de emplear todos los datos de los datasets se restringió la cantidad de documentos a alrededor de dos mil por cada juego de datos. Se obtuvieron los siguientes resultados:
+
+\begin{verbatim}  
+NEWSGROUP
+
+Multinomial Naive Bayes
+(avg : f1-score)
+micro avg: 0.6420189274447949   
+macro avg: 0.6229742698146286   
+weighted avg: 0.6272770879929649
+samples avg: 0.5847037688536247 
+
+Logistic Regression
+(avg : f1-score)
+micro avg: 0.4841445427728614
+macro avg: 0.4705289626711132
+weighted avg: 0.47566567952073086
+samples avg: 0.3318400139725788
+
+K Neighbors Classifier
+(avg : f1-score)
+micro avg: 0.11060130403284231
+macro avg: 0.10710245171380031
+weighted avg: 0.10866395001592159
+samples avg: 0.059994760282944724
+
+Decision Tree Classifier
+(avg : f1-score)
+micro avg: 0.5923186344238976
+macro avg: 0.5793549946253852
+weighted avg: 0.5872601387474548
+samples avg: 0.49708384794840127
+
+Random Forest Classifier
+(avg : f1-score)
+micro avg: 0.2637063887630267
+macro avg: 0.24092971766745883
+weighted avg: 0.2447020478086619
+samples avg: 0.15238843769103133
+
+
+documentos de entrenamiento: 953
+documentos de prueba: 952
+número de clases: 20
+
+
+REUTERS
+
+Multinomial Naive Bayes
+(avg : f1-score)
+micro avg: 0.684402332361516
+macro avg: 0.3646946771616699
+weighted avg: 0.6643401399876091
+samples avg: 0.7387600920321509
+
+Logistic Regression
+(avg : f1-score)
+micro avg: 0.7393617021276596
+macro avg: 0.33672957157668737
+weighted avg: 0.6915224193979003
+samples avg: 0.7123448828948828
+
+K Neighbors Classifier
+(avg : f1-score)
+micro avg: 0.5998089780324738
+macro avg: 0.20311362021332247
+weighted avg: 0.4962913170860935
+samples avg: 0.5927269841269841
+
+Decision Tree Classifier
+(avg : f1-score)
+micro avg: 0.7359617682198326
+macro avg: 0.436536897803069
+weighted avg: 0.7068268351350262
+samples avg: 0.7160689824895197
+
+Random Forest Classifier
+(avg : f1-score)
+micro avg: 0.6653164556962026
+macro avg: 0.21820108986022607
+samples avg: 0.6127802308802309
+
+
+documentos de entrenamiento: 1000
+documentos de prueba: 1000
+número de clases: 66
+\end{verbatim}
+
+Para ambos casos el Naive Bayes multinomial obtiene buenos resultados en comparación con el resto teniendo en cuenta la relativa sencillez del algoritmo. El decision Tree Classifier obtiene buenos resultados en ambos casos, mejores que el Naive Bayes en el set de Reuters y similares a este en el de Newsgroup. Otro algoritmo con relativamente buenos resultados fue el de regresión logística, más en el caso del set de Reuters. La similitud entre los resultados de la puntuación media micro y macro de f1 en el set de Newsgroups se debe a que las clasificaciones en dicho set son únicas. Además en este set los resultados son en general peores que en el de Reuters porque los clasificadores dados son realmente complejos y con cierta jerarquía algo que no se tuvo en cuenta al aplicar las clasificaciones. 
 
 \section*{Recomendaciones}
 
