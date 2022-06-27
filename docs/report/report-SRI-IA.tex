@@ -133,6 +133,20 @@ Los resultados son devueltos en un ranking, ordenados por relevancia, nuevas act
 
 \section{Evaluación de los modelos}
 
+\subsection{Métricas objetivas}
+
+Dado que se tenía las consultas y sus relevancias para el set de Cranfield, se condujo una evaluación de los modelos con la métrica F. Los resultados no fueron buenos al promediar los resultados para las aproximadamente 150 consultas pues muchas no estaban devolviendo resultados relevantes.
+
+Motivo de esto es que algunas consultas tenían pocos resultados relevantes en el set de prueba. En el caso del modelo basado en TF-IDF también las consultas al tener tantos términos el tiempo de respuesta se hacía grande. Doc2Vec, mostró un tiempo de respuesta rápido pero lo antes mencionado sobre la poca cantidad de relevantes en el set de prueba, sumado a la alta especificidad del dataset que causa que documentos relevantes y no relevantes no sean ubicados cerca en el espacio no ofrece resultados satisfactorios.
+
+Para consultas más simples Doc2Vec presenta mejores resultados que el vectorial al detectar la semántica latente debido a su representación.
+
+Para algunas consultas de Cranfield se obtienen los siguientes resultados:
+
+% \verb+Query: what similarity laws must be obeyed when constructing aeroelastic models of heated high speed aircraft .+
+
+\subsection{Métricas subjetivas}
+
 Métricas objetivas y subjetivas estudiadas empleando 2 colecciones
 
 Mostrar consultas con los resultados (al menos 1 por colección)

@@ -136,7 +136,6 @@ docs/*/*
 !docs/*/*.tex
 !docs/*/*.cls
 !docs/*/*.bib
-!docs/*/*.pdf
 
 # benchmarks results
 benchmarks/memory/*.bin
