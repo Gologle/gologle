@@ -79,17 +79,13 @@ def fetch_documents(q: str, model: Model, dataset: Dataset, limit: int, offset: 
 
     with Session(engine.db_engine) as session:
         docs = session.query(Document).filter(Document.id.in_(ids)).all()
+
+        # for elem in sorted(docs, key=lambda doc: rank[doc.id], reverse=True)[:10]:
+        #     print(elem.id, rank[elem.id])
+
         docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
 
     return docs
-
-
-def get_feedback(db_engine: SqlEngine, query: str):
-    with Session(db_engine) as session:
-        statement = select(Document, Feedback).join(Feedback)
-        results = session.exec(statement).all()
-        print("results", results)
-        pass
 
 
 @app.get("/query")
@@ -141,7 +137,7 @@ def set_feedback_to_engine(db_engine, dataset: Dataset, doc_id: str, body: SetFe
             feedback = Feedback(query=normalized_query,
                                 document_id=doc_id, relevance=body.rating)
 
-        print(feedback)
+        # print(feedback)
         session.add(feedback)
         session.commit()
 

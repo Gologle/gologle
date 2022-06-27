@@ -53,7 +53,8 @@ def evaluate_f_score(engine: Engine, beta: float = 1.0) -> None:
     final_scores: dict[str, list[float]] = {query: [] for query in queries}
     for i in tqdm(range(50)):
         for query, relevant, in queries.items():
-            result = engine.answer(query, max_length=len(relevant) * 10).rank
+            # print(query, sorted([int(r.id) for r in relevant]))
+            result = engine.answer(query, max_length=len(relevant) * 3).rank
             score = f_score(result, relevant, 3)
             final_scores[query].append(score)
             for doc in result:

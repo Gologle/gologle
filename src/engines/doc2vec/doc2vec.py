@@ -1,7 +1,9 @@
 from __future__ import annotations
 from pathlib import Path
 
-from sklearn.metrics.pairwise import cosine_distances
+import numpy as np
+from sklearn.preprocessing import normalize
+from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 from sqlmodel import SQLModel, Session, select
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.utils import simple_preprocess
@@ -68,25 +70,24 @@ class Doc2VecModel(Engine):
                     Feedback.query)
         ).all()
 
-        # Filter feedback instances by it's query cosine distance
+        # Filter feedback instances by it's query cosine similarity
         filtered = []
         for feedback in feedbacks:
             fq_query = self.model.infer_vector(
                 simple_preprocess(feedback.query))
-            distance = cosine_distances([query_vector, fq_query])[0, 1]
-            print(
-                f"Distance between {query}-{feedback.query} in doc {feedback.document_id}: {distance}")
-            if distance <= .3:
+            similarity = cosine_similarity([query_vector, fq_query])[0, 1]
+            # print(
+            #     f"Similarity between {query}-{feedback.query} in doc {feedback.document_id}: {similarity}")
+            if similarity > .8:
                 filtered.append(feedback.query)
 
-        # doc_ids = [f.document_id for f in filtered]
         doc_ids = session.exec(
             select(Feedback.document_id).where(Feedback.query.in_(filtered))
         ).all()
-        print(doc_ids)
         docs_related = session.exec(
             select(Document).where(Document.id.in_(doc_ids))
         ).all()
+
         return docs_related
 
     def apply_feedback(self, query: str):
@@ -100,19 +101,30 @@ class Doc2VecModel(Engine):
             relevant_docs = self._get_docs_by_feedback(session, 1, query)
             non_relevant_docs = self._get_docs_by_feedback(session, -1, query)
 
-            beta = 0 if len(relevant_docs) == 0 else 0.75 / len(relevant_docs)
-            gamma = 0 if len(non_relevant_docs) == 0 else 0.15 / \
-                len(non_relevant_docs)
+            beta = 0.7
+            gamma = 0.15
 
             for doc in relevant_docs:
-                # doc_vector = self.model.infer_vector(
-                #     simple_preprocess(doc.text))
+                doc_vector = self.model.infer_vector(
+                    simple_preprocess(doc.text))
                 query_vector = query_vector + beta * self.model.dv[doc.id]
 
             for doc in non_relevant_docs:
-                # doc_vector = self.model.infer_vector(
-                #     simple_preprocess(doc.text))
+                doc_vector = self.model.infer_vector(
+                    simple_preprocess(doc.text))
                 query_vector = query_vector - gamma * self.model.dv[doc.id]
+        query_vector = normalize(query_vector[:, np.newaxis], axis=0).ravel()
+
+        # TEST
+        # print("NON RELEVANT")
+        # for doc in non_relevant_docs:
+        #     print(cosine_similarity([query_vector, self.model.dv[doc.id]]))
+
+        # print("RELEVANT")
+        # for doc in relevant_docs:
+        #     print(cosine_similarity([query_vector, self.model.dv[doc.id]]))
+
+        # print(query_vector)
 
         return query_vector
 
