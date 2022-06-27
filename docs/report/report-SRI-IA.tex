@@ -56,7 +56,7 @@ Este modelo esta basado en la representación de los documentos mediante \textit
 
 \subsection{Preprocesamiento}
 
-Dado que ha sido implementado el modelo vectorial basado en TF-IDF (del inglés, \textit{term frequency} e \textit{inverse document frequency}), haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para tokenizar los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
+Dado que ha sido implementado el modelo vectorial basado en TF-IDF (del inglés, \textit{term frequency} e \textit{inverse document frequency}), haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para \textit{tokenizar} los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. De igual forma fueron eliminadas las \textit{stopwords} del idioma inglés, conjunto de palabras comunes que no son de relevancia, lo cual permite al modelo enfocarse en palabras más relevantes. Finalmente se realizo lematización sobre el texto usando la biblioteca \verb+nltk+. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
 
 \subsection{Construcción del índice}
 
@@ -91,9 +91,39 @@ La similitud entre el vector obtenido y los documentos de la base de datos es ca
 
 \section{Modelo Vectorial (Doc2Vec)}
 
+Para desarrollar el modelo nos apoyamos en la biblioteca \verb+gensim+, que ofrece una implementación del modelo \verb+Doc2Vec+, que se encuentra en el módulo \verb+gensim.models.doc2vec+. Esta esta basada en \textit{Paragraph Vector} \cite{le2014distributed}, un algoritmo no supervisado que es capaz de aprender \textit{features} de tamaño fijo de textos de tamaño variable, como oraciones, párrafos y documentos. 
+
 \subsection{Preprocesamiento}
 
+De igual forma al modelo basado en TF-IDF, aquí se llevo el texto de los documentos a minúscula, fueron removidas las \textit{stopwords}, palabras de una sola letra y se realizó la lematización. El texto obtenido para cada documento fue empleado para crear una instancia de \verb+TaggedDocument+, del módulo \verb+gensim.models.doc2vec+.
+
+\subsection{Entrenamiento}
+
+Con el conjunto de \verb+TaggedDocument+, cada uno con el ID del documento relacionado, se realizó el entrenamiento del modelo \verb+Doc2Vec+. Este se realizo con vectores de tamaño 50, por 200 epochs. Se probaron vectores de mayor tamaño y número de epochs mayor pero no mejoraron los resultados prácticos.
+
+EL modelo entrenado es persistido para en futuros inicios del sistema solo tener que cargarlo.
+
 \subsection{Construcción del índice}
+
+Dado que este modelo realiza la inferencia a través del modelo, solo es necesario guardar en el índice los documentos que van a ser devueltos al usuario.
+
+\subsection{Feedback}
+
+En la base da datos (índice) también fue creada una tabla para registrar el feedback de los usuarios. Para cada documento obtenido de una consulta se puede dar una valoración de si fue relevante o no (1 o -1). Esta valoración es almacenada en el índice para en futuras consultas similares usarla y mejorar la cantidad de documentos relevantes devueltos.
+
+Para calcular el feedback fue empleado el algoritmo de Rocchio, el cual tiene como premisa hallar el centroide de los puntos relevantes y tratar de alejarse de los no relevantes.
+
+$$q_m = \alpha q_0 + \frac{\beta}{|D_r|} \sum_{d_j \in D_r} d_j - \frac{\gamma}{|D_{nr}|} \sum_{d_j \in D_{nr}} d_j$$
+
+donde:
+
+$D_r$: conjunto conocido de documentos relevantes
+
+$D_{nr}$: conjunto conocido de documentos no relevantes
+
+$\alpha, \beta, \gamma$: pesos para consulta, documentos relevantes y documentos no relevantes respectivamente
+
+Se tomaron como valores de referencia $\alpha = 0.97$, $\beta = 0.4$ y $\gamma = 0.15$.
 
 \subsection{Recuperación de Información}
 
@@ -109,6 +139,10 @@ Aquí creo se puede hablar de todo el sistema en general con un análisis críti
 
 \section*{Recomendaciones}
 
-Como mejorar la propuesta?
+Existen varios acercamientos a los SRI que podrían ser de utilidad para mejorar la calidad de los resultados obtenidos por los modelos propuestos y su rendimiento. Una posibilidad es agregar un sistema de recomendaciones basado en proponer documentos con características similares a los de los resultados de búsqueda. En este sentido se pueden recomendar aquellos documentos más relevantes que sean miembros de los clústeres a los que pertenecen los resultados. Estas ideas se basan en emplear algoritmos de clasificación y agrupamiento para proponer posibles resultados que escapen a los obtenidos por los modelos implementados. Además para mejorar la velocidad de búsqueda es posible añadir filtros basados en las características de los documentos para así restringir el campo de búsqueda. Esta idea puede mejorar de manera considerable el rendimiento a cambio de cierta pérdida de precisión que dependerá de la calidad de la clasificación obtenida y de la elección de filtro del usuario.
+
+
+\bibliography{bib} 
+\bibliographystyle{ieeetr}
 
 \end{document}
