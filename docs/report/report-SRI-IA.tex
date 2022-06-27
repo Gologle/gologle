@@ -52,7 +52,13 @@ Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Ne
 
 \section{Modelo Vectorial (TF-IDF)}
 
-Dado que ha sido implementado el modelo vectorial, haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para tokenizar los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
+Este modelo esta basado en la representación de los documentos mediante \textit{bag-of-words}. Es decir, se transforma cada documento a una vector de tamaño fijo que solo contiene información de la cantidad de veces que aparece cada palabra por componente. Este modelo a pesar de ser efectivo tiene como debilidad que se pierde la información respecto al orden de las palabras, además, como no aprende el significado de las palabras, la distancia entre vectores no siempre representa una diferencia en el significado. 
+
+\subsection{Preprocesamiento}
+
+Dado que ha sido implementado el modelo vectorial basado en TF-IDF (del inglés, \textit{term frequency} e \textit{inverse document frequency}), haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para tokenizar los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
+
+\subsection{Construcción del índice}
 
 A partir del conjunto de documentos se obtiene una matriz esparcida que representa la cantidad de veces que aparece el término $i$ en el documento $j$. Sobre esta matriz nos apoyamos para calcular la frecuencia de documentos inversa ($idf$) para cada término.
 
@@ -70,7 +76,7 @@ $$tf_{ij} = \frac{freq_{ij}}{max_l freq_{lj}}$$
 
 Hecho esto, se tiene la matriz esparcida de los pesos, la cual es guardada en la base de datos para agilizar el tiempo de respuesta.
 
-La base de datos creada a partir de los documentos, los términos, la $idf$ para cada término y los pesos es considerada el índice del sistema para satisfacer las consultas de la forma mas rápida posible.
+La base de datos creada a partir de los documentos, los términos, la $idf$ para cada término y los pesos es considerada el índice del sistema para satisfacer las consultas de la forma más rápida posible.
 
 \subsection{Recuperación de Información}
 
@@ -85,5 +91,10 @@ La similitud entre el vector obtenido y los documentos de la base de datos es ca
 
 \section{Modelo Vectorial (Doc2Vec)}
 
+\subsection{Preprocesamiento}
+
+\subsection{Construcción del índice}
+
+\subsection{Recuperación de Información}
 
 \end{document}
