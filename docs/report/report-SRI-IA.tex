@@ -111,7 +111,7 @@ Dado que este modelo realiza la inferencia a través del modelo, solo es necesar
 
 En la base da datos (índice) también fue creada una tabla para registrar el feedback de los usuarios. Para cada documento obtenido de una consulta se puede dar una valoración de si fue relevante o no (1 o -1). Esta valoración es almacenada en el índice para en futuras consultas similares usarla y mejorar la cantidad de documentos relevantes devueltos.
 
-Para calcular el feedback fue empleado el algoritmo de Rocchio, el cual tiene como premisa hallar el centroide de los puntos relevantes y tratar de alejarse de los no relevantes.
+Para calcular el feedback fue empleado el algoritmo de Rocchio \cite{roochio}, el cual tiene como premisa hallar el centroide de los puntos relevantes y tratar de alejarse de los no relevantes.
 
 $$q_m = \alpha q_0 + \frac{\beta}{|D_r|} \sum_{d_j \in D_r} d_j - \frac{\gamma}{|D_{nr}|} \sum_{d_j \in D_{nr}} d_j$$
 
@@ -126,6 +126,10 @@ $\alpha, \beta, \gamma$: pesos para consulta, documentos relevantes y documentos
 Se tomaron como valores de referencia $\alpha = 0.97$, $\beta = 0.4$ y $\gamma = 0.15$.
 
 \subsection{Recuperación de Información}
+
+Cuando se recibe una query antes de hallar la similitud con los documentos del modelo se le aplica Rocchio de acuerdo a lo descrito anteriormente. El vector resultante es el empleado para calcular la similitud con los documentos del modelo. Esta es calculada usando el coseno del ángulo entre los vectores \cite{ms}, de forma similar al primer modelo.
+
+Los resultados son devueltos en un ranking, ordenados por relevancia, nuevas actualizaciones por feedback son procesadas y añadidas a la base de datos.
 
 \section{Evaluación de los modelos}
 
