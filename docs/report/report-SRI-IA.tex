@@ -153,7 +153,9 @@ Mostrar consultas con los resultados (al menos 1 por colección)
 
 \section{Ventajas y Desventajas del Sistema}
 
-Aquí creo se puede hablar de todo el sistema en general con un análisis crítico
+El Sistema de Recuperación de Información presentado presenta un conjunto de ventajas que permiten una buena aproximación a la búsqueda de resultados en distintos datasets, pues permite utilizar dos modelos con características diferentes en dependencia del tipo de búsqueda que se quiera realizar, en caso de búsquedas para palabras clave exactas o semiexactas (lemmatize) se puede utilizar el modelo vectorial, y para consultas en donde no importa mucho el matching exacto de las palabras sino su significado semántico se puede utilizar el modelo doc2vec, esto permite obtener resultados diferentes y abarcar documentos relevantes de distinto tipo. Otra ventaja es el soporte de retroalimentación para el modelo doc2vec, pudiendo usarla para la mejora de las respuestas, lo que permite que el SRI se adapte a las necesidades del usuario. Además, como detalles técnicos, proponemos una arquitectura escalable, a través de una API, que permite tener varias instancias del servidor corriendo de manera horizontal.
+
+Como desventajas tenemos la incapacidad de procesar consultas demasiado largas con el modelo doc2vec, ya que la representación espacial para vectores de varias palabras puede resultar en un vector de embeddings que no se encuentre cercano a ningún grupo de datos específicos en el espacio, esto pasa también al usar Rocchio para la retroalimentación, pues la sobrecarga de retroalimentación, sobre todo negativa y hacia documentos no muy relacionados en la representación de embeddings, provoca que no exista un centroide bien definido y por tanto el nuevo vector consulta tenga documentos irrelevantes cercanos.
 
 \section*{Recomendaciones}
 
