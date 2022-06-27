@@ -80,6 +80,11 @@ def fetch_documents(q: str, model: Model, dataset: Dataset, limit: int, offset: 
     with Session(engine.db_engine) as session:
         docs = session.query(Document).filter(Document.id.in_(ids)).all()
 
+        for elem in sorted(docs, key=lambda doc: rank[doc.id], reverse=True)[:10]:
+            print(elem.id, rank[elem.id])
+
+        docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
+
         # for elem in sorted(docs, key=lambda doc: rank[doc.id], reverse=True)[:10]:
         #     print(elem.id, rank[elem.id])
 
