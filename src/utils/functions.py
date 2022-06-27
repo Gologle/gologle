@@ -41,3 +41,20 @@ def lemmatize_query(query: str):
             lemmatized.append(word)
 
     return " ".join(lemmatized)
+
+
+def lemmatize_word(word: str):
+    lemmatizer = WordNetLemmatizer()
+
+    as_verb = lemmatizer.lemmatize(word, pos='v')
+    as_adj = lemmatizer.lemmatize(word, pos='a')
+    as_noun = lemmatizer.lemmatize(word, pos='n')
+
+    if word != as_verb:
+        return as_verb
+    elif word != as_adj:
+        return as_adj
+    elif word != as_noun:
+        return as_noun
+    else:
+        return word

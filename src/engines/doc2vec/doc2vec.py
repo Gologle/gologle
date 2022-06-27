@@ -8,6 +8,7 @@ from sqlmodel import SQLModel, Session, select
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.utils import simple_preprocess
 
+from src.utils.functions import lemmatize_query, lemmatize_word
 from src.engines import Engine
 from src.parsers import DatasetParser
 from src.utils import DatabaseBatchCommit, TimeLogger, QueryResults, DocResult
@@ -40,9 +41,10 @@ class Doc2VecModel(Engine):
         tagged_docs = []
         for entry in self.dataset:
             tokens = simple_preprocess(entry.main_content)
-            tagged_docs.append(TaggedDocument(tokens, [entry.id]))
+            lemmatized_tokens = [lemmatize_word(token) for token in tokens]
+            tagged_docs.append(TaggedDocument(lemmatized_tokens, [entry.id]))
 
-        self.model = Doc2Vec(vector_size=100, min_count=2, epochs=200)
+        self.model = Doc2Vec(vector_size=50, min_count=2, epochs=200)
         self.model.build_vocab(tagged_docs)
         with TimeLogger(f"Training {self.name} with dataset {self.dataset.name}... "):
             self.model.train(
@@ -133,7 +135,7 @@ class Doc2VecModel(Engine):
         return query_vector
 
     def answer(self, query: str, max_length: int) -> QueryResults:
-        inferred_vector = self.apply_feedback(query)
+        inferred_vector = self.apply_feedback(lemmatize_query(query))
 
         sims = self.model.dv.most_similar([inferred_vector], topn=max_length)
 
