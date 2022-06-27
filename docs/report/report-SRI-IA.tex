@@ -54,13 +54,33 @@ Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Ne
 
 Dado que ha sido implementado el modelo vectorial, haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para tokenizar los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
 
-A partir del conjunto de documentos se obtiene una matriz esparcida que representa la cantidad de veces que aparece el término $i$ en el documento $j$. Sobre esta matriz nos apoyamos para calcular la frecuencia de documentos inversa ($idf$) para cada término. Luego haciendo uso de la clase \verb+sklearn.feature_extraction.text.TfidfTransformer+ calculamos los pesos para cada término en cada documento. Hecho esto, se tiene la matriz esparcida de los pesos, la cual es guardada en la base de datos para agilizar el tiempo de respuesta.
+A partir del conjunto de documentos se obtiene una matriz esparcida que representa la cantidad de veces que aparece el término $i$ en el documento $j$. Sobre esta matriz nos apoyamos para calcular la frecuencia de documentos inversa ($idf$) para cada término.
 
-Resumiendo el proceso antes descrito, la base de datos es considerada el índice de nuestro sistema. Almacena los documentos, los términos, $idf$ para cada término y pesos de los términos en cada documento. Su objetivo es agilizar el tiempo de respuesta.
+$$idf_i = \log \frac{N}{n_i}$$
+
+$n_i$: cantidad de documentos en los que aparece el término $i$.
+
+Luego haciendo uso de la clase \verb+TfidfTransformer+ que se encuentra en el módulo \verb+sklearn.feature_extraction.text+ calculamos los pesos para cada término en cada documento, de acuerdo a la expresión:
+
+$$w_{ij} = tf_{ij} * idf_i$$
+
+donde $t_{ij}$ es la frecuencia normalizada del término $i$ en el document $j$,
+
+$$tf_{ij} = \frac{freq_{ij}}{max_l freq_{lj}}$$
+
+Hecho esto, se tiene la matriz esparcida de los pesos, la cual es guardada en la base de datos para agilizar el tiempo de respuesta.
+
+La base de datos creada a partir de los documentos, los términos, la $idf$ para cada término y los pesos es considerada el índice del sistema para satisfacer las consultas de la forma mas rápida posible.
 
 \subsection{Recuperación de Información}
 
-Cuando es recibida una consulta esta es procesada de forma similar a como se procesa un documento. Se calcula el peso para cada término y la similitud entre el vector obtenido y los documentos de la base de datos usando como valor el coseno del ángulo entre estos. Los documentos con mayor similitud son dados como resultado.
+Cuando es recibida una consulta $q$, esta es procesada de forma similar a como se procesa un documento. Se calcula el peso para cada término ($w_{iq}$), mediante la siguiente expresión
+
+$$w_{iq} = (\alpha + (1 - \alpha) \frac{freq_{lq}}{max_l freq_{lq}}) * idf_i$$
+
+donde $\alpha$ es un valor de suavizado que permite amortiguar la contribución de la frecuencia de los términos, se le asignó un valor de 0.5.
+
+La similitud entre el vector obtenido y los documentos de la base de datos es calculada usando como valor de referencia el coseno del ángulo entre estos. Los documentos con mayor similitud son dados como resultado de forma ordenada.
 
 
 \section{Modelo Vectorial (Doc2Vec)}
