@@ -9,8 +9,9 @@ from sqlmodel import Field, Session, select
 from src.parsers import CranfieldParser, NewsgroupsParser
 from src.engines.vectorial import VectorialModel
 from src.engines.doc2vec import Doc2VecModel
-from src.engines.models import Document, Feedback
+from src.engines.models import Document, Feedback, LabeledDoc
 from src.utils.timeit import timed
+from src.classifiers.predictor import load_predictor
 
 
 # Caching for sqlachemy, improves performance, check the reference
@@ -104,6 +105,34 @@ async def query(
     (docs, time) = timed(fetch_documents, q, model, dataset, limit, offset)
     return {"query": q, "time": time} | paginated(limit, offset, docs[offset:offset + limit], len(docs))
 
+
+@app.post("/related")
+async def related(q: str, dataset: Dataset, model: Model = Model.doc2vec):
+    engine = ENGINES[model][dataset]
+    labels = engine.predict_labels(q)
+
+    with Session(engine.db_engine) as session:
+        labeled_docs = session.exec(
+            select(LabeledDoc).where(LabeledDoc.label.in_(labels))
+        )
+
+    docs: dict[str, list[str]] = {}
+    for lab_doc in labeled_docs:
+        try:
+            docs[lab_doc].append(lab_doc.label)
+        except KeyError:
+            docs[lab_doc] = [lab_doc.label]
+
+    return {
+        "predicted_labels": labels,
+        "docs": [
+            {
+                "id": doc,
+                "labels": labels
+            }
+            for doc, labels in docs.items()
+        ]
+    }
 
 @app.get("/document/{dataset}/{doc_id}")
 async def details(dataset: Dataset, doc_id: str):

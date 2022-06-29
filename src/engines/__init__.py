@@ -21,6 +21,9 @@ class Engine(ABC):
     def answer(self, query: str, max_length: int) -> QueryResults:
         """Answers a query to the user."""
 
+    def predict_labels(self, query: str) -> list[str]:
+        raise NotImplementedError()
+
     def update_index(self):
         """Indexes all the documents of the dataset. This is an expensive method
         that must be called only if new documents are added."""

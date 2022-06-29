@@ -7,6 +7,13 @@ test:
 run:
 	uvicorn src.main:app --reload
 
+install:
+	pip install -r requirements.txt \
+		--index-url http://nexus.prod.uci.cu/repository/pypi-proxy/simple/ \
+		--trusted-host nexus.prod.uci.cu
+	python -m nltk.downloader reuters
+	python -m nltk.downloader wordnet
+
 BENCH_MEM_PATH := benchmarks/memory
 
 bench-mem-vect: clean
