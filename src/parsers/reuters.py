@@ -9,29 +9,25 @@ from .base import DatasetEntry, DatasetParser
 
 class ReutersEntry(DatasetEntry):
 
-    def __init__(self, id : str):
+    def __init__(self, full_id: str):
+        _, id_ = full_id.split("/")
 
-        full_id = reuters.fileids(id)
-        split_id = full_id.split('/')
+        super(ReutersEntry, self).__init__(id_)
 
-        self._set = split_id[0]
-        self._categories = reuters.categories(id)
-        self._raw = reuters.raw(id)
-
-        super(ReutersEntry, self).__init__(split_id[1])
+        self._categories = reuters.categories(full_id)
+        self._raw = reuters.raw(full_id)
 
     @property
-    def raw_text(self):
+    def raw_text(self) -> str:
         return self._raw
 
     @property
-    def set(self):
-        return self._set
+    def main_content(self) -> str:
+        return self._raw
 
     @property
-    def categories(self):
+    def labels(self) -> list[str]:
         return self._categories
-
 
 
 class ReutersParser(DatasetParser):
@@ -50,8 +46,8 @@ class ReutersParser(DatasetParser):
 
         self.entries: list[ReutersEntry] = []
 
-        for id in reuters.fileids():
-                self.entries.append(ReutersEntry(id))
+        for full_id in reuters.fileids():
+            self.entries.append(ReutersEntry(full_id))
 
         assert len(self.entries) == self.total
 
@@ -62,3 +58,6 @@ class ReutersParser(DatasetParser):
         return self.count_vzer.fit_transform(
             tuple(entry.raw_text for entry in self)
         )
+
+    def get_test_cases(self):
+        raise NotImplementedError()
