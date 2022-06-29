@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Iterator
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -15,6 +16,12 @@ class DatasetEntry(ABC):
     def __init__(self, id_: str):
         self.id = id_
 
+    def __eq__(self, other: DatasetEntry) -> bool:
+        return self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
     @property
     @abstractmethod
     def raw_text(self) -> str:
@@ -23,8 +30,13 @@ class DatasetEntry(ABC):
 
     @property
     @abstractmethod
-    def main_content(self):
+    def main_content(self) -> str:
         """Relevant text of the document."""
+
+    @property
+    @abstractmethod
+    def labels(self) -> list[str]:
+        """List of labels for this documents"""
 
 
 class DatasetParser(ABC):

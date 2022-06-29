@@ -22,3 +22,10 @@ class Feedback(SQLModel, table=True):
     relevance: float
 
     document: Optional[Document] = Relationship(back_populates="feedbacks")
+
+
+class LabeledDoc(SQLModel, table=True):
+    document_id: str = Field(foreign_key="document.id", primary_key=True)
+    label: Optional[str] = Field(default=None)
+
+    document: Document = Relationship(back_populates="labeled_docs")

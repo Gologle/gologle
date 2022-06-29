@@ -12,6 +12,7 @@ from src.utils.functions import lemmatize_query
 from .models import (
     Term,
     Document,
+    LabeledDoc,
     InverseDocumentFrequency,
     WeightTermDocument,
 )
@@ -52,6 +53,8 @@ class VectorialModel(Engine):
             with TimeLogger("Adding Documents to db... "):
                 for entry in self.dataset:
                     batcher.add(Document(id=entry.id, text=entry.raw_text))
+                    for label in entry.labels:
+                        batcher.add(LabeledDoc(document_id=entry.id, label=label))
 
             with TimeLogger("Adding Terms and IDFs to db... "):
                 for term in self.dataset.count_vzer.get_feature_names_out():

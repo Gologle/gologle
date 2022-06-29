@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field
 
 # This import is needed for init the database
 # noinspection PyUnresolvedReferences
-from src.engines.models import Term, Document
+from src.engines.models import Term, Document, LabeledDoc
 
 
 class WeightTermDocument(SQLModel, table=True):

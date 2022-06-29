@@ -12,7 +12,7 @@ from src.utils.functions import lemmatize_query, lemmatize_word
 from src.engines import Engine
 from src.parsers import DatasetParser
 from src.utils import DatabaseBatchCommit, TimeLogger, QueryResults, DocResult
-from src.engines.models import Document, Feedback
+from src.engines.models import Document, Feedback, LabeledDoc
 
 
 class Doc2VecModel(Engine):
@@ -62,6 +62,8 @@ class Doc2VecModel(Engine):
             with TimeLogger("Adding Documents to db... "):
                 for entry in self.dataset:
                     batcher.add(Document(id=entry.id, text=entry.raw_text))
+                    for label in entry.labels:
+                        batcher.add(LabeledDoc(document_id=entry.id, label=label))
 
     def _get_docs_by_feedback(self, session: Session, relevance: int, query: str):
         """Filter all docs with Document.feedback.relevance == relevance"""

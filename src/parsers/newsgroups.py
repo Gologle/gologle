@@ -44,6 +44,15 @@ class NewsgroupsEntry(DatasetEntry):
     def main_content(self):
         return self.text
 
+    @property
+    def labels(self) -> list[str]:
+        """Gets the label for this document from the group it belongs.
+
+        Returns:
+            A list containing the group name.
+        """
+        return [self.group]
+
 
 class NewsgroupsParser(DatasetParser):
     """Parser for the 20 Newsgroups dataset"""
@@ -68,7 +77,7 @@ class NewsgroupsParser(DatasetParser):
         assert len(self.entries) == self.total
 
     def __iter__(self) -> Iterator[NewsgroupsEntry]:
-        return iter(self.entries)\
+        return iter(self.entries)
 
     def fit_transform(self):
         return self.count_vzer.fit_transform(

@@ -28,12 +28,21 @@ class CranfieldEntry(DatasetEntry):
         self.text = match["text"].strip()
 
     @property
-    def raw_text(self):
+    def raw_text(self) -> str:
         return self._raw_text
 
     @property
-    def main_content(self):
+    def main_content(self) -> str:
         return self.text
+
+    @property
+    def labels(self) -> list[str]:
+        """The Cranfield dataset is not labeled.
+
+        Returns:
+            An empty list with no labels.
+        """
+        return []
 
 
 class CranfieldParser(DatasetParser):
