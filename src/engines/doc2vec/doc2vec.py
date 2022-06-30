@@ -94,10 +94,12 @@ class Doc2VecModel(Engine):
         )
         print(X)
         print(y)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2)
 
         # train classifier
-        clf = OneVsRestClassifier(SVC(kernel="poly", decision_function_shape="ovo"))
+        clf = OneVsRestClassifier(
+            SVC(kernel="poly", decision_function_shape="ovo"))
         with TimeLogger(f"Training classifier with {self.dataset.total} documents... "):
             clf.fit(X_train, y_train)
 
@@ -119,7 +121,8 @@ class Doc2VecModel(Engine):
                 for entry in self.dataset:
                     batcher.add(Document(id=entry.id, text=entry.raw_text))
                     for label in entry.labels:
-                        batcher.add(LabeledDoc(document_id=entry.id, label=label))
+                        batcher.add(LabeledDoc(
+                            document_id=entry.id, label=label))
 
     def _get_docs_by_feedback(self, session: Session, relevance: int, query: str):
         """Filter all docs with Document.feedback.relevance == relevance"""
@@ -162,8 +165,9 @@ class Doc2VecModel(Engine):
         """
         if self.use_predictor:
             inferred_vector = self.model.infer_vector(simple_preprocess(query))
-            labels_indexes = self.predictor.predict(inferred_vector)
-            return [self.labels.index(lab_index) for lab_index in labels_indexes]
+            labels_indexes = self.predictor.predict([inferred_vector])[0]
+            print(labels_indexes)
+            return [self.labels[i] for i, lab_index in enumerate(labels_indexes) if lab_index == 1]
         else:
             return []
 

@@ -7,7 +7,6 @@ from pydantic import BaseModel
 class DocResult(BaseModel):
     id: str
     sim: float
-    description: str
 
     def __lt__(self, other: DocResult):
         return self.sim < other.sim

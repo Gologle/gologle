@@ -36,18 +36,18 @@ class SetFeedbackRequest(BaseModel):
     rating: int
 
 
-CRANFIELD = CranfieldParser()
+# CRANFIELD = CranfieldParser()
 NEWSGROUPS = NewsgroupsParser()
 REUTERS = ReutersParser()
 
 ENGINES = {
     Model.vectorial: {
-        Dataset.cranfield: VectorialModel(CRANFIELD),
+        # Dataset.cranfield: VectorialModel(CRANFIELD),
         Dataset.newsgroups: VectorialModel(NEWSGROUPS),
         Dataset.reuters: VectorialModel(REUTERS),
     },
     Model.doc2vec: {
-        Dataset.cranfield: Doc2VecModel(CRANFIELD),
+        # Dataset.cranfield: Doc2VecModel(CRANFIELD),
         Dataset.newsgroups: Doc2VecModel(NEWSGROUPS),
         Dataset.reuters: Doc2VecModel(REUTERS),
     }
@@ -82,19 +82,26 @@ def fetch_documents(q: str, model: Model, dataset: Dataset, limit: int, offset: 
     ids = [result.id for result in results.docs]
 
     with Session(engine.db_engine) as session:
-        docs = session.query(Document).filter(Document.id.in_(ids)).all()
+        docs = session.query(Document).filter(
+            Document.id.in_(ids)).all()
 
         for elem in sorted(docs, key=lambda doc: rank[doc.id], reverse=True)[:10]:
             print(elem.id, rank[elem.id])
 
         docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
 
-        # for elem in sorted(docs, key=lambda doc: rank[doc.id], reverse=True)[:10]:
-        #     print(elem.id, rank[elem.id])
-
         docs = sorted(docs, key=lambda doc: rank[doc.id], reverse=True)
+        labels = session.query(LabeledDoc).all()
 
-    return docs
+        docs_with_labels = []
+        for doc in docs:
+            docs_with_labels.append({
+                'id': doc.id,
+                'text': doc.text,
+                'labels': [label.label for label in labels if label.document_id == doc.id]
+            })
+
+        return docs_with_labels
 
 
 @app.get("/query")
@@ -109,7 +116,7 @@ async def query(
     return {"query": q, "time": time} | paginated(limit, offset, docs[offset:offset + limit], len(docs))
 
 
-@app.post("/related")
+@app.get("/related")
 async def related(q: str, dataset: Dataset, model: Model = Model.doc2vec):
     engine = ENGINES[model][dataset]
     labels = engine.predict_labels(q)
@@ -119,23 +126,23 @@ async def related(q: str, dataset: Dataset, model: Model = Model.doc2vec):
             select(LabeledDoc).where(LabeledDoc.label.in_(labels))
         )
 
-    docs: dict[str, list[str]] = {}
-    for lab_doc in labeled_docs:
-        try:
-            docs[lab_doc].append(lab_doc.label)
-        except KeyError:
-            docs[lab_doc] = [lab_doc.label]
+        docs: dict[str, list[str]] = {}
+        for lab_doc in labeled_docs:
+            try:
+                docs[lab_doc.id].append(lab_doc.label)
+            except KeyError:
+                docs[lab_doc.id] = [lab_doc.label]
 
-    return {
-        "predicted_labels": labels,
-        "docs": [
-            {
-                "id": doc,
-                "labels": labels
-            }
-            for doc, labels in docs.items()
-        ]
-    }
+        return {
+            "predicted_labels": labels,
+            # "docs": [
+            #     {
+            #         "id": doc,
+            #         "labels": labels
+            #     }
+            #     for doc, labels in docs.items()
+            # ]
+        }
 
 
 @app.get("/document/{dataset}/{doc_id}")
