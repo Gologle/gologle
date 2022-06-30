@@ -1,0 +1,234 @@
+\documentclass[12pt]{llncs}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,activeacute]{babel}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage[colorlinks, citecolor=black, urlcolor=black, bookmarks=false, hypertexnames=true]{hyperref} 
+\usepackage{url}
+\usepackage{listings}
+\usepackage{color}
+
+\begin{document}
+
+\begin{center}
+\large{
+\rule{\textwidth}{0.5pt}
+\par Universidad de la Habana, MATCOM
+\par Inteligencia Artificial (2022)
+\vspace{0.4cm}
+\par \textcolor{cyan}{Informe de Entrega Final}
+\par Samuel David Suárez Rodríguez C512
+\par Enmanuel Verdesia Suárez C511
+\par Gabriel Fernando Martín Fernández C511
+\rule{\textwidth}{1.5pt}
+}
+
+%\par \textbf{Tema:} Búsqueda empleando el modelo vectorial.
+\end{center}
+
+\section{Descripción General}
+\vspace{0.5cm}
+\subsection{Resumen}
+\par Se desarrolló un Sistema de Recuperación de Información (SRI) empleando dos modelos vectoriales para la recuperación de datos, uno de ellos el empleando una bolsa de palabras el otro usando doc2vec. Dado un conjunto de varios documentos de diversos temas la aplicación realiza una búsqueda que obtiene resultados relevantes y acordes a una consulta presentada por el usuario. Además se emplearon métodos para clasificar los documentos y extraer sus características más relevantes usando algoritmos supervisados para la clasificación y selección de características. Luego de procesar una query dada se le extraen las características, dándole la posibilidad al usuario de filtrar los documentos de búsqueda según la clasificación obtenida.
+
+\subsection{Estructura del proyecto}
+\par El proyecto presenta tres componentes principales: el backend o componente lógica de la aplicación, junto con la API, y el frontend en forma de un servicio web.
+
+Está desarrollado en GitHub bajo la organización \href{https://github.com/Gologle}{\color{blue}Gologle}. Ahí pueden ser encontrados los dos repositorios principales. Además están hospedados el cliente del sistema y la API en internet.
+
+\begin{itemize}
+  \item Web: https://gologle.vercel.app
+  \item API: https://gologle-api.herokuapp.com/
+\end{itemize}
+
+\section*{Detalles de implementación}
+
+\section{Procesamiento de los sets de datos}
+
+Para cada set de datos empleado fue implementado un parser para extraer su información. Este proceso no se pudo realizar de forma común pues cada set contenía los documentos de forma particular. Una vez \textit{parseados} los sets de datos se puede delimitar e identificar cada documento que contiene de forma única por un ID y así guardar el texto de los documentos en una base de datos SQLite. Dicha base de datos facilita obtener un menor tiempo de respuesta ante un pedido de parte del cliente.
+
+Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Newsgroups (18828 documentos) y Reuters (10788 documentos). Se contaba con consultas y resultados relevantes para Cranfield. Para  Newsgroups se tenían clasificaciones exclusivas de los documentos con cierto carácter jerárquico que se pueden considerar de cierta forma como clústers. En Reuters se contaban con clasificaciones no exclusivas para los documentos. Estos últimos sets fueron empleados para implementar algoritmos de clasificación de documentos.
+
+\section{Modelo Vectorial (TF-IDF) \cite{conf} } 
+
+Este modelo esta basado en la representación de los documentos mediante \textit{bag-of-words}. Es decir, se transforma cada documento a una vector de tamaño fijo que solo contiene información de la cantidad de veces que aparece cada palabra por componente. Este modelo a pesar de ser efectivo tiene como debilidad que se pierde la información respecto al orden de las palabras, además, como no aprende el significado de las palabras, la distancia entre vectores no siempre representa una diferencia en el significado. 
+
+\subsection{Preprocesamiento}
+
+Dado que ha sido implementado el modelo vectorial basado en TF-IDF (del inglés, \textit{term frequency} e \textit{inverse document frequency}), haciendo uso de la biblioteca \verb+sklearn+ nos ajustamos a la forma que esta requiere para representar los documentos. Dicha biblioteca se usó para \textit{tokenizar} los documentos y extraer como \textit{features} los términos que estos contienen. El texto de los documentos es llevado a minúscula, además los términos de un simple carácter son eliminados. De igual forma fueron eliminadas las \textit{stopwords} del idioma inglés, conjunto de palabras comunes que no son de relevancia, lo cual permite al modelo enfocarse en palabras más relevantes. Finalmente se realizo lematización sobre el texto usando la biblioteca \verb+nltk+. Así se obtiene cada documento como un vector de términos (palabras) con una dimensión determinada.
+
+\subsection{Construcción del índice}
+
+A partir del conjunto de documentos se obtiene una matriz esparcida que representa la cantidad de veces que aparece el término $i$ en el documento $j$. Sobre esta matriz nos apoyamos para calcular la frecuencia de documentos inversa ($idf$) para cada término.
+
+$$idf_i = \log \frac{N}{n_i}$$
+
+$n_i$: cantidad de documentos en los que aparece el término $i$.
+
+Luego haciendo uso de la clase \verb+TfidfTransformer+ que se encuentra en el módulo \verb+sklearn.feature_extraction.text+ calculamos los pesos para cada término en cada documento, de acuerdo a la expresión:
+
+$$w_{ij} = tf_{ij} * idf_i$$
+
+donde $t_{ij}$ es la frecuencia normalizada del término $i$ en el document $j$,
+
+$$tf_{ij} = \frac{freq_{ij}}{max_l freq_{lj}}$$
+
+Hecho esto, se tiene la matriz esparcida de los pesos, la cual es guardada en la base de datos para agilizar el tiempo de respuesta.
+
+La base de datos creada a partir de los documentos, los términos, la $idf$ para cada término y los pesos es considerada el índice del sistema para satisfacer las consultas de la forma más rápida posible.
+
+\subsection{Recuperación de Información}
+
+Cuando es recibida una consulta $q$, esta es procesada de forma similar a como se procesa un documento. Se calcula el peso para cada término ($w_{iq}$), mediante la siguiente expresión
+
+$$w_{iq} = (\alpha + (1 - \alpha) \frac{freq_{lq}}{max_l freq_{lq}}) * idf_i$$
+
+donde $\alpha$ es un valor de suavizado que permite amortiguar la contribución de la frecuencia de los términos, se le asignó un valor de 0.5.
+
+La similitud entre el vector obtenido y los documentos de la base de datos es calculada usando como valor de referencia el coseno del ángulo entre estos. Los documentos con mayor similitud son dados como resultado de forma ordenada.
+
+
+\section{Modelo Vectorial (Doc2Vec)}
+
+Para desarrollar el modelo nos apoyamos en la biblioteca \verb+gensim+, que ofrece una implementación del modelo \verb+Doc2Vec+, que se encuentra en el módulo \verb+gensim.models.doc2vec+. Esta esta basada en \textit{Paragraph Vector} \cite{le2014distributed}, un algoritmo no supervisado que es capaz de aprender \textit{features} de tamaño fijo de textos de tamaño variable, como oraciones, párrafos y documentos. 
+
+\subsection{Preprocesamiento}
+
+De igual forma al modelo basado en TF-IDF, aquí se llevo el texto de los documentos a minúscula, fueron removidas las \textit{stopwords}, palabras de una sola letra y se realizó la lematización. El texto obtenido para cada documento fue empleado para crear una instancia de \verb+TaggedDocument+, del módulo \verb+gensim.models.doc2vec+.
+
+\subsection{Entrenamiento}
+
+Con el conjunto de \verb+TaggedDocument+, cada uno con el ID del documento relacionado, se realizó el entrenamiento del modelo \verb+Doc2Vec+. Este se realizo con vectores de tamaño 50, por 200 epochs. Se probaron vectores de mayor tamaño y número de epochs mayor pero no mejoraron los resultados prácticos.
+
+EL modelo entrenado es persistido para en futuros inicios del sistema solo tener que cargarlo.
+
+\subsection{Construcción del índice}
+
+Dado que este modelo realiza la inferencia a través del modelo, solo es necesario guardar en el índice los documentos que van a ser devueltos al usuario.
+
+\subsection{Feedback}
+
+En la base da datos (índice) también fue creada una tabla para registrar el feedback de los usuarios. Para cada documento obtenido de una consulta se puede dar una valoración de si fue relevante o no (1 o -1). Esta valoración es almacenada en el índice para en futuras consultas similares usarla y mejorar la cantidad de documentos relevantes devueltos.
+
+Para calcular el feedback fue empleado el algoritmo de Rocchio \cite{roochio}, el cual tiene como premisa hallar el centroide de los puntos relevantes y tratar de alejarse de los no relevantes.
+
+$$q_m = \alpha q_0 + \frac{\beta}{|D_r|} \sum_{d_j \in D_r} d_j - \frac{\gamma}{|D_{nr}|} \sum_{d_j \in D_{nr}} d_j$$
+
+donde:
+
+$D_r$: conjunto conocido de documentos relevantes
+
+$D_{nr}$: conjunto conocido de documentos no relevantes
+
+$\alpha, \beta, \gamma$: pesos para consulta, documentos relevantes y documentos no relevantes respectivamente
+
+Se tomaron como valores de referencia $\alpha = 0.97$, $\beta = 0.4$ y $\gamma = 0.15$.
+
+\subsection{Recuperación de Información}
+
+Cuando se recibe una query antes de hallar la similitud con los documentos del modelo se le aplica Rocchio de acuerdo a lo descrito anteriormente. El vector resultante es el empleado para calcular la similitud con los documentos del modelo. Esta es calculada usando el coseno del ángulo entre los vectores \cite{ms}, de forma similar al primer modelo.
+
+Los resultados son devueltos en un ranking, ordenados por relevancia, nuevas actualizaciones por feedback son procesadas y añadidas a la base de datos.
+
+\section{Evaluación de los modelos}
+
+\subsection{Métricas objetivas}
+
+Dado que se tenía las consultas y sus relevancias para el set de Cranfield, se condujo una evaluación de los modelos con la métrica F. Los resultados no fueron buenos al promediar los resultados para las aproximadamente 150 consultas pues muchas no estaban devolviendo resultados relevantes.
+
+Motivo de esto es que algunas consultas tenían pocos resultados relevantes en el set de prueba. En el caso del modelo basado en TF-IDF también las consultas al tener tantos términos el tiempo de respuesta se hacía grande. Doc2Vec, mostró un tiempo de respuesta rápido pero lo antes mencionado sobre la poca cantidad de relevantes en el set de prueba, sumado a la alta especificidad del dataset que causa que documentos relevantes y no relevantes no sean ubicados cerca en el espacio no ofrece resultados satisfactorios.
+
+Para consultas más simples Doc2Vec presenta mejores resultados que el vectorial al detectar la semántica latente debido a su representación.
+
+
+\subsection{Métricas subjetivas}
+
+El sistema ofrece una interfaz web que permite el acceso a múltiples usuarios de forma concurrente. El tiempo demorado en dar respuesta a una consulta es mostrado en la cabecera de los resultados junto con la cantidad de documentos recuperados.
+
+Las consultas del modelo basado en Doc2Vec son considerablemente más rápidas que el modelo TF-IDF. El tiempo de respuesta en TF-IDF aumenta considerablemente con el tamaño de la consulta, no así con el otro modelo.
+
+En base a esto el usuario puede escoger que modelo utilizar para realizar sus consultas y sobre que set de datos realizarlo.
+
+También se ofrece la funcionalidad de dar retroalimentación. Cada modelo se puede beneficiar del feedback proveído para responder las consultas a todos los usuarios.
+
+\section{Clasificación con word embbeding}
+
+\subsection {Procesamiento}
+
+\subsection {Entrenamiento}
+
+\subsection {Resultados}
+
+\section {Clasificación con bag of words}
+
+\subsection {Procesamiento}
+\par El rendimiento de los clasificadores basados en representaciones de documentos del tipo \emph{bag of words} depende en gran medida del tamaño del vocabulario generado y de la cantidad de clasificaciones distintas existentes. Los juegos de datos de Reuters y Newsgroup presentes ya están completamente clasificados y no es práctico disminuir la cantidad de clasificaciones pues estas fueron realizadas por expertos, por lo que el enfoque está en reducir el vocabulario. Para ello primeramente se procesan los documentos llevando todas las letras a minúsculas y eliminando los \emph{stopwords}. Luego de esto se procede a lematizar los resultados anteriores, lo cual consiste en agrupar las formas flexionadas de una palabra para que puedan analizarse como un solo elemento. Este proceso disminuyó en alrededor del 20\% el tamaño del vocabulario en Reuters. Además ocurre que mucho de los términos presentes no interfieren de forma alguna en la clasificación, es decir, se puede decir que la ocurrencia de estos términos es independiente a la asignación de una característica dada. Para eliminar estos términos que no aportan a la clasificación se realiza la prueba de Chi cuadrado de independencia con $\alpha = 0.001$ para validar los resultados. Esto disminuye de manera considerable el tamaño del vocabulario, por ejemplo un vocabulario de 19442 términos de Reuters se disminuyó a solo 6353 términos. A pesar de todos estos pasos la presencia de 18828 documentos en Newsgroup con un vocabulario de gran magnitud provoca que este proceso sea lento y costoso y el vocabulario resultante siga teniendo un volumen grande. Por esto nos enfocamos en aplicar este proceso solamente a los documentos de Reuters.
+
+\subsection {Entrenamiento}
+
+Debido a que se presentaban varias posibles clasificaciones no exclusivas para los documentos de Reuters se decidió asumir que estas eran independientes entre si al momento de clasificar, es decir, que solo se tuvo en cuenta el efecto de los términos para cada clasificación y no si la presencia de una clasifiación influye en otra. Se entrenaron 7 clasificadores distintos: Multinomial Naive Bayes, Logistic Regression, K Neighbors Classifier (con k = 5), Decision Tree Classifier, Random Forest Classifier y Linear SVC. Por la gran la cantidad de documentos y términos el SVC empleado fue la versión lineal, pero aún así es el más lento de los clasificadores. En Reuters vienen predefinidos los sets de entrenamiento y prueba y estos fueron los empleados para comprobar y validar los resultados de la clasificación. 
+
+\subsection {Resultados}
+
+Luego de realizar el proceso de entrenamiento se realizó la clasificación de todos los documentos de prueba empleando los 7 clasificadores mencionados. Se obtuvieron los siguientes resultados:
+
+\begin{verbatim}
+
+Multinomial Naive Bayes
+(avg : f1-score)
+micro avg: 0.6530014641288433
+macro avg: 0.29329847905512024
+weighted avg: 0.7205583770121995
+samples avg: 0.7904683682233751
+
+Logistic Regression
+(avg : f1-score)
+micro avg: 0.8525010688328346
+macro avg: 0.43382452413979866
+weighted avg: 0.8322244929434732
+samples avg: 0.8498618700982947
+
+K Neighbors Classifier
+(avg : f1-score)
+micro avg: 0.7446840597194995
+macro avg: 0.2697600445761281
+weighted avg: 0.6971368258240257
+samples avg: 0.7376020893913537
+
+Decision Tree Classifier
+(avg : f1-score)
+micro avg: 0.8160950580610316
+macro avg: 0.5316174341100584
+weighted avg: 0.8097923041790919
+samples avg: 0.8178524812570537
+
+Random Forest Classifier
+(avg : f1-score)
+micro avg: 0.7722488038277512
+macro avg: 0.19979583365438597
+weighted avg: 0.7067818402956366
+samples avg: 0.72896320203268
+
+Linear SVC
+(avg : f1-score)
+micro avg: 0.8507690175973397
+macro avg: 0.5018403600230141
+weighted avg: 0.8374420848760664
+samples avg: 0.8660101947145703
+
+\end{verbatim}
+
+\par Como se puede apreciar los mejores resultados en tanto a la puntuación promedio de f1 micro son los del clasificador por Regresión Logística y el SVC lineal. En el caso de la puntuación promedio de f1 macro el mejor resultado fue el del clasificador por Árbol de Decisión. En sentido general, podemos decir que los clasificadores por Árbol de Decisión y el SVC fueron los de mejor desempeño al tener una buena puntuación promedio de f1 tanto micro como macro. De destacar también el clasificador multinomial de Naive Bayes por  obtener resultados aceptables y con una velocidad muy superior al resto de los clasificadores.
+
+
+\section*{Recomendaciones}
+
+Bla bla bla recomendativo
+%Existen varios acercamientos a los SRI que podrían ser de utilidad para mejorar la calidad de los resultados obtenidos por los modelos propuestos y su rendimiento. Una posibilidad es agregar un sistema de recomendaciones basado en proponer documentos con características similares a los de los resultados de búsqueda. En este sentido se pueden recomendar aquellos documentos más relevantes que sean miembros de los clústeres a los que pertenecen los resultados. Estas ideas se basan en emplear algoritmos de clasificación y agrupamiento para proponer posibles resultados que escapen a los obtenidos por los modelos implementados. Además para mejorar la velocidad de búsqueda es posible añadir filtros basados en las características de los documentos para así restringir el campo de búsqueda. Esta idea puede mejorar de manera considerable el rendimiento a cambio de cierta pérdida de precisión que dependerá de la calidad de la clasificación obtenida y de la elección de filtro del usuario.
+
+
+\bibliography{bib} 
+\bibliographystyle{ieeetr}
+
+\end{document}
