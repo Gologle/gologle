@@ -99,7 +99,7 @@ class Doc2VecModel(Engine):
 
         # train classifier
         clf = OneVsRestClassifier(
-            SVC(kernel="poly", decision_function_shape="ovo"))
+            SVC(kernel="poly", C=4, degree=3, decision_function_shape="ovr"))
         with TimeLogger(f"Training classifier with {self.dataset.total} documents... "):
             clf.fit(X_train, y_train)
 
@@ -166,8 +166,10 @@ class Doc2VecModel(Engine):
         if self.use_predictor:
             inferred_vector = self.model.infer_vector(simple_preprocess(query))
             labels_indexes = self.predictor.predict([inferred_vector])[0]
-            print(labels_indexes)
-            return [self.labels[i] for i, lab_index in enumerate(labels_indexes) if lab_index == 1]
+            if self.dataset.name == '20newsgroups-18828':
+                return [self.labels[labels_indexes]]
+            else:
+                return [self.labels[i] for i, lab_index in enumerate(labels_indexes) if lab_index == 1]
         else:
             return []
 
