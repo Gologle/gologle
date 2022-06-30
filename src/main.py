@@ -6,12 +6,11 @@ from pydantic import BaseModel
 from sqlalchemy.engine import Engine as SqlEngine
 from sqlmodel import Field, Session, select
 
-from src.parsers import CranfieldParser, NewsgroupsParser
+from src.parsers import CranfieldParser, NewsgroupsParser, ReutersParser
 from src.engines.vectorial import VectorialModel
 from src.engines.doc2vec import Doc2VecModel
 from src.engines.models import Document, Feedback, LabeledDoc
 from src.utils.timeit import timed
-from src.classifiers.predictor import load_predictor
 
 
 # Caching for sqlachemy, improves performance, check the reference
@@ -24,6 +23,7 @@ Select.inherit_cache = True
 class Dataset(Enum):
     cranfield = "cranfield"
     newsgroups = "newsgroups"
+    reuters = "reuters"
 
 
 class Model(Enum):
@@ -38,15 +38,18 @@ class SetFeedbackRequest(BaseModel):
 
 CRANFIELD = CranfieldParser()
 NEWSGROUPS = NewsgroupsParser()
+REUTERS = ReutersParser()
 
 ENGINES = {
     Model.vectorial: {
         Dataset.cranfield: VectorialModel(CRANFIELD),
         Dataset.newsgroups: VectorialModel(NEWSGROUPS),
+        Dataset.reuters: VectorialModel(REUTERS),
     },
     Model.doc2vec: {
         Dataset.cranfield: Doc2VecModel(CRANFIELD),
         Dataset.newsgroups: Doc2VecModel(NEWSGROUPS),
+        Dataset.reuters: Doc2VecModel(REUTERS),
     }
 }
 
@@ -133,6 +136,7 @@ async def related(q: str, dataset: Dataset, model: Model = Model.doc2vec):
             for doc, labels in docs.items()
         ]
     }
+
 
 @app.get("/document/{dataset}/{doc_id}")
 async def details(dataset: Dataset, doc_id: str):
