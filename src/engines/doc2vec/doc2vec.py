@@ -25,7 +25,8 @@ class Doc2VecModel(Engine):
 
     def __init__(self, dataset: DatasetParser,
                  model_path: Path | None = None,
-                 predictor_path: Path | None = None):
+                 predictor_path: Path | None = None,
+                 use_predictor: bool = True):
         """
         Args:
             dataset: dataset with the entries parsed
@@ -42,20 +43,22 @@ class Doc2VecModel(Engine):
             self._train_model()
         self.model = Doc2Vec.load(str(self.model_path))
 
-        # load classifier model
-        self.labels = []
-        for entry in self.dataset.entries:
-            for label in entry.labels:
-                if label not in self.labels:
-                    self.labels.append(label)
-        if predictor_path is None:
-            self.predictor_path = Path(f"{dataset.name}_clf.model")
-        else:
-            self.predictor_path = predictor_path
-        if not self.predictor_path.is_file():
-            self._train_predictor()
-        with self.predictor_path.open(mode="rb") as predictor:
-            self.predictor: OneVsRestClassifier = pickle.load(predictor)
+        self.use_predictor = use_predictor
+        if self.use_predictor:
+            # load classifier model
+            self.labels = []
+            for entry in self.dataset.entries:
+                for label in entry.labels:
+                    if label not in self.labels:
+                        self.labels.append(label)
+            if predictor_path is None:
+                self.predictor_path = Path(f"{dataset.name}_clf.model")
+            else:
+                self.predictor_path = predictor_path
+            if not self.predictor_path.is_file():
+                self._train_predictor()
+            with self.predictor_path.open(mode="rb") as predictor:
+                self.predictor: OneVsRestClassifier = pickle.load(predictor)
 
         # create index if not exists
         if not self.db.is_file():
@@ -83,15 +86,18 @@ class Doc2VecModel(Engine):
         X = np.array([vector for vector in map(
             lambda e: self.model.dv[e.id],
             self.dataset.entries)])
-        y = np.array([labels for labels in map(
-            lambda e: np.array([self.labels.index(label) for label in e.labels]),
-            self.dataset.entries)])
+        y = np.array([
+            y_labs for y_labs in map(
+                lambda e: np.array(np.array(
+                    [int(label in e.labels) for label in self.labels])),
+                self.dataset.entries)]
+        )
         print(X)
         print(y)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
         # train classifier
-        clf = OneVsRestClassifier(SVC(decision_function_shape="ovo"))
+        clf = OneVsRestClassifier(SVC(kernel="poly", decision_function_shape="ovo"))
         with TimeLogger(f"Training classifier with {self.dataset.total} documents... "):
             clf.fit(X_train, y_train)
 
@@ -154,9 +160,12 @@ class Doc2VecModel(Engine):
         Returns:
             A list with the predicted labels.
         """
-        inferred_vector = self.model.infer_vector(simple_preprocess(query))
-        labels_indexes = self.predictor.predict(inferred_vector)
-        return [self.labels.index(lab_index) for lab_index in labels_indexes]
+        if self.use_predictor:
+            inferred_vector = self.model.infer_vector(simple_preprocess(query))
+            labels_indexes = self.predictor.predict(inferred_vector)
+            return [self.labels.index(lab_index) for lab_index in labels_indexes]
+        else:
+            return []
 
     def apply_feedback(self, query: str):
         """Optimize query string based on known feedback applying Rocchio algorithm
