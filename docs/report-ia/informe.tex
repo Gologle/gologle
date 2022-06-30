@@ -48,7 +48,7 @@ Está desarrollado en GitHub bajo la organización \href{https://github.com/Golo
 
 Para cada set de datos empleado fue implementado un parser para extraer su información. Este proceso no se pudo realizar de forma común pues cada set contenía los documentos de forma particular. Una vez \textit{parseados} los sets de datos se puede delimitar e identificar cada documento que contiene de forma única por un ID y así guardar el texto de los documentos en una base de datos SQLite. Dicha base de datos facilita obtener un menor tiempo de respuesta ante un pedido de parte del cliente.
 
-Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Newsgroups (18828 documentos) y Reuters (10788 documentos). Se contaba con consultas y resultados relevantes para Cranfield. Para  Newsgroups se tenían clasificaciones exclusivas de los documentos con cierto carácter jerárquico que se pueden considerar de cierta forma como clústers. En Reuters se contaban con clasificaciones no exclusivas para los documentos. Estos últimos sets fueron empleados para implementar algoritmos de clasificación de documentos.
+Los sets de datos con los que se trabajó fueron Cranfield (1400 documentos), Newsgroups (18828 documentos) y Reuters (10788 documentos). Se contaba con consultas y resultados relevantes para Cranfield. Para  Newsgroups se tenían clasificaciones exclusivas de los documentos con cierto carácter jerárquico que se pueden considerar de cierta forma como \textit{clusters}. En Reuters se contaban con clasificaciones no exclusivas para los documentos. Estos últimos sets fueron empleados para implementar algoritmos de clasificación de documentos.
 
 \section{Modelo Vectorial (TF-IDF) \cite{conf} } 
 
@@ -152,22 +152,76 @@ En base a esto el usuario puede escoger que modelo utilizar para realizar sus co
 
 También se ofrece la funcionalidad de dar retroalimentación. Cada modelo se puede beneficiar del feedback proveído para responder las consultas a todos los usuarios.
 
-\section{Clasificación con word embbeding}
+\section{Clasificación con word embedding}
 
 \subsection {Procesamiento}
 
+Para la representación de los datos se emplearon los vectores resultantes de la fase de entrenamiento en Doc2Vec. Dichos vectores tienen dimensión 50 y comprenden la \textit{features} más relevantes de cada documento. Al la dimensión ser relativamente pequeña respecto a otras representaciones como Bag-Of-Words (BOW), permite entrenar y validar el modelo de forma más rápida sin comprometer la efectividad.
+
 \subsection {Entrenamiento}
+
+Para crear los sets de entrenamientos de acuerdo a un set de datos se uso la función \verb+test_train_split+, que permite crear dichos conjuntos de manera aleatoria y con un tamaño prefijado. En nuestro caso se usó el 80\% de los datos para entrenar, el resto para la validación.
+
+Fue empleado para la clasificación una estrategia de One-vs-Rest (OvR), la cual se puede aplicar a problemas con varias clases para un mismo dato de entrada. Como estimador fue empleado \textit{Support Vector Machine} dado que es efectivo cuando existe un margen entre las distintas clases de los datos de entrada.
 
 \subsection {Resultados}
 
-\section {Clasificación con bag of words}
+Se aplicaron diferentes métricas para conocer la efectividad del acercamiento empleado en la clasificación.
+
+Se aplicó \textbf{Grid Search} sobre ambos datasets. Se obtuvo el mejor resultado con la combinación de parámetros:
+
+\begin{verbatim}
+Reuters
+{
+  'estimator__C': 4,
+  'estimator__degree': 2,
+  'estimator__kernel': 'poly'
+}
+f1-micro: 0.779011046468671
+
+Newsgroups
+{
+  'estimator__C': 4,
+  'estimator__degree': 3,
+  'estimator__kernel': 'poly'
+}
+f1-micro: 0.6973894202460953
+\end{verbatim}
+
+Para el modelo del sistema de recuperación se empleo grado (\verb+degree+) 3 en los polinomios.
+
+Los resultados de \textbf{Cross Validation} con \textit{k-fold}, $k = 5$ sobre el set de datos de Reuters son mostrados a continuación:
+
+\begin{verbatim}
+[0.74845402, 0.7727366 , 0.75914149, 0.79130435, 0.79537477]
+\end{verbatim}
+
+La matrices de confusión muestran los resultados en la clasificación.
+
+\begin{figure}[!h]
+  \includegraphics[width=\linewidth]{./images/reuters-conf.jpg}
+  \caption{Matriz de Confusión para la evaluación de Reuters.}
+\end{figure}
+
+\newpage
+
+\begin{figure}[!h]
+  \includegraphics[width=\linewidth]{./images/news-conf.jpg}
+  \caption{Matriz de Confusión para la evaluación de Newsgroups.}
+\end{figure}
+
+\newpage
+
+Los resultados están disponibles en los ficheros \verb+reuters.ipynb+ y \verb+newsgroups.ipynb+.
+
+\section {Clasificación con Bag-Of-Words}
 
 \subsection {Procesamiento}
 \par El rendimiento de los clasificadores basados en representaciones de documentos del tipo \emph{bag of words} depende en gran medida del tamaño del vocabulario generado y de la cantidad de clasificaciones distintas existentes. Los juegos de datos de Reuters y Newsgroup presentes ya están completamente clasificados y no es práctico disminuir la cantidad de clasificaciones pues estas fueron realizadas por expertos, por lo que el enfoque está en reducir el vocabulario. Para ello primeramente se procesan los documentos llevando todas las letras a minúsculas y eliminando los \emph{stopwords}. Luego de esto se procede a lematizar los resultados anteriores, lo cual consiste en agrupar las formas flexionadas de una palabra para que puedan analizarse como un solo elemento. Este proceso disminuyó en alrededor del 20\% el tamaño del vocabulario en Reuters. Además ocurre que mucho de los términos presentes no interfieren de forma alguna en la clasificación, es decir, se puede decir que la ocurrencia de estos términos es independiente a la asignación de una característica dada. Para eliminar estos términos que no aportan a la clasificación se realiza la prueba de Chi cuadrado de independencia con $\alpha = 0.001$ para validar los resultados. Esto disminuye de manera considerable el tamaño del vocabulario, por ejemplo un vocabulario de 19442 términos de Reuters se disminuyó a solo 6353 términos. A pesar de todos estos pasos la presencia de 18828 documentos en Newsgroup con un vocabulario de gran magnitud provoca que este proceso sea lento y costoso y el vocabulario resultante siga teniendo un volumen grande. Por esto nos enfocamos en aplicar este proceso solamente a los documentos de Reuters.
 
 \subsection {Entrenamiento}
 
-Debido a que se presentaban varias posibles clasificaciones no exclusivas para los documentos de Reuters se decidió asumir que estas eran independientes entre si al momento de clasificar, es decir, que solo se tuvo en cuenta el efecto de los términos para cada clasificación y no si la presencia de una clasifiación influye en otra. Se entrenaron 7 clasificadores distintos: Multinomial Naive Bayes, Logistic Regression, K Neighbors Classifier (con k = 5), Decision Tree Classifier, Random Forest Classifier y Linear SVC. Por la gran la cantidad de documentos y términos el SVC empleado fue la versión lineal, pero aún así es el más lento de los clasificadores. En Reuters vienen predefinidos los sets de entrenamiento y prueba y estos fueron los empleados para comprobar y validar los resultados de la clasificación. 
+Debido a que se presentaban varias posibles clasificaciones no exclusivas para los documentos de Reuters se decidió asumir que estas eran independientes entre si al momento de clasificar, es decir, que solo se tuvo en cuenta el efecto de los términos para cada clasificación y no si la presencia de una clasificación influye en otra. Se entrenaron 7 clasificadores distintos: Multinomial Naive Bayes, Logistic Regression, K Neighbors Classifier (con k = 5), Decision Tree Classifier, Random Forest Classifier y Linear SVC. Por la gran la cantidad de documentos y términos el SVC empleado fue la versión lineal, pero aún así es el más lento de los clasificadores. En Reuters vienen predefinidos los sets de entrenamiento y prueba y estos fueron los empleados para comprobar y validar los resultados de la clasificación. 
 
 \subsection {Resultados}
 
@@ -224,8 +278,8 @@ samples avg: 0.8660101947145703
 
 \section*{Recomendaciones}
 
-Bla bla bla recomendativo
-%Existen varios acercamientos a los SRI que podrían ser de utilidad para mejorar la calidad de los resultados obtenidos por los modelos propuestos y su rendimiento. Una posibilidad es agregar un sistema de recomendaciones basado en proponer documentos con características similares a los de los resultados de búsqueda. En este sentido se pueden recomendar aquellos documentos más relevantes que sean miembros de los clústeres a los que pertenecen los resultados. Estas ideas se basan en emplear algoritmos de clasificación y agrupamiento para proponer posibles resultados que escapen a los obtenidos por los modelos implementados. Además para mejorar la velocidad de búsqueda es posible añadir filtros basados en las características de los documentos para así restringir el campo de búsqueda. Esta idea puede mejorar de manera considerable el rendimiento a cambio de cierta pérdida de precisión que dependerá de la calidad de la clasificación obtenida y de la elección de filtro del usuario.
+El proceso de clasificación propuesto puede mejorarse desarrollando un clasificador basado en el empleo de redes neuronales. Además se pudiese realizar un acercamiento híbrido o un preprocesamiento más restrictivo para incorporar los clasificadores que emplean bag of words a sets con vocabularios de grandes dimensiones como Newsgroup.
+
 
 
 \bibliography{bib} 
