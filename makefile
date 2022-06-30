@@ -13,6 +13,7 @@ install:
 		--trusted-host nexus.prod.uci.cu
 	python -m nltk.downloader reuters
 	python -m nltk.downloader wordnet
+	python -m nltk.downloader omw-1.4
 
 BENCH_MEM_PATH := benchmarks/memory
 

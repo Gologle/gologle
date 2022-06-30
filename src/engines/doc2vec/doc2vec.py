@@ -1,9 +1,15 @@
 from __future__ import annotations
+import pickle
 from pathlib import Path
+from itertools import groupby, chain
 
 import numpy as np
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import SVC
 from sqlmodel import SQLModel, Session, select
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.utils import simple_preprocess
@@ -17,23 +23,41 @@ from src.engines.models import Document, Feedback, LabeledDoc
 
 class Doc2VecModel(Engine):
 
-    def __init__(self, dataset: DatasetParser, model_path: Path | None = None):
+    def __init__(self, dataset: DatasetParser,
+                 model_path: Path | None = None,
+                 predictor_path: Path | None = None):
         """
         Args:
             dataset: dataset with the entries parsed
+            model_path: path to the Doc2Vec model
         """
         super(Doc2VecModel, self).__init__("Doc2Vec Model", dataset)
 
+        # load Doc2Vec model
         if model_path is None:
             self.model_path = Path(f"{self.dataset.name}({self.name}).model")
         else:
             self.model_path = model_path
-
         if not self.model_path.is_file():
             self._train_model()
-
         self.model = Doc2Vec.load(str(self.model_path))
 
+        # load classifier model
+        self.labels = []
+        for entry in self.dataset.entries:
+            for label in entry.labels:
+                if label not in self.labels:
+                    self.labels.append(label)
+        if predictor_path is None:
+            self.predictor_path = Path(f"{dataset.name}_clf.model")
+        else:
+            self.predictor_path = predictor_path
+        if not self.predictor_path.is_file():
+            self._train_predictor()
+        with self.predictor_path.open(mode="rb") as predictor:
+            self.predictor: OneVsRestClassifier = pickle.load(predictor)
+
+        # create index if not exists
         if not self.db.is_file():
             self.update_index()
 
@@ -53,6 +77,32 @@ class Doc2VecModel(Engine):
                 epochs=self.model.epochs
             )
         self.model.save(str(self.model_path))
+
+    def _train_predictor(self) -> None:
+        # get train and test sets
+        X = np.array([vector for vector in map(
+            lambda e: self.model.dv[e.id],
+            self.dataset.entries)])
+        y = np.array([labels for labels in map(
+            lambda e: np.array([self.labels.index(label) for label in e.labels]),
+            self.dataset.entries)])
+        print(X)
+        print(y)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+        # train classifier
+        clf = OneVsRestClassifier(SVC(decision_function_shape="ovo"))
+        with TimeLogger(f"Training classifier with {self.dataset.total} documents... "):
+            clf.fit(X_train, y_train)
+
+        # print report of training
+        y_pred = clf.predict(X_test)
+        report = classification_report(y_test, y_pred, zero_division=0)
+        print(report)
+
+        # persist classifier to disk
+        with self.predictor_path.open(mode="wb") as predictor:
+            pickle.dump(clf, predictor)
 
     def _update_index(self) -> None:
         """Builds the index of the engine in a sqlite database."""
@@ -93,6 +143,20 @@ class Doc2VecModel(Engine):
         ).all()
 
         return docs_related
+
+    def predict_labels(self, query: str) -> list[str]:
+        """
+        Predicts the labels for the vector of a query.
+
+        Args:
+            query: query made to the model
+
+        Returns:
+            A list with the predicted labels.
+        """
+        inferred_vector = self.model.infer_vector(simple_preprocess(query))
+        labels_indexes = self.predictor.predict(inferred_vector)
+        return [self.labels.index(lab_index) for lab_index in labels_indexes]
 
     def apply_feedback(self, query: str):
         """Optimize query string based on known feedback applying Rocchio algorithm
